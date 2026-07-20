@@ -2,9 +2,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/phase0-docs.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.1",
