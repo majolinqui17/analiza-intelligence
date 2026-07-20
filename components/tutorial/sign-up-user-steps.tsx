@@ -73,17 +73,11 @@ export function SignUpUserSteps() {
           </Link>
         </TutorialStep>
       ) : null}
-      <TutorialStep title="Sign up your first user">
+      <TutorialStep title="Create assigned users">
         <p>
-          Head over to the{" "}
-          <Link
-            href="auth/sign-up"
-            className="font-bold hover:underline text-foreground/80"
-          >
-            Sign up
-          </Link>{" "}
-          page and sign up your first user. It&apos;s okay if this is just you
-          for now. Your awesome idea will have plenty of users later!
+          Create users from Supabase Auth or the future administration screen,
+          then assign organization, country, company, branch, and role before
+          they can use Analiza Intelligence.
         </p>
       </TutorialStep>
     </ol>

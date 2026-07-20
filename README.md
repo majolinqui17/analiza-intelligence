@@ -32,15 +32,16 @@ Initial countries:
 
 ## Current Phase
 
-Phase 0 is the foundation phase:
+Phase 1 baseline is now in place:
 
-- repository diagnosis
-- product and architecture documentation
-- security and data rules
-- implementation plan
+- Phase 0 documentation and agent rules
+- Supabase core migration and DEMO seed
+- RLS helper functions and policies
+- protected context selection
+- public self-registration disabled in the UI
 - validation scripts
 
-The next phase will add Supabase migrations, RLS, users, roles, and the country/company/branch selection model.
+The next phase will replace the remaining starter surfaces with the executive shell, role-aware navigation, filters, and DEMO dashboard.
 
 ## Local Setup
 

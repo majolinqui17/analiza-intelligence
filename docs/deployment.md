@@ -23,7 +23,16 @@ Server-only secrets for future connectors must not use `NEXT_PUBLIC_` prefixes.
 
 ## Supabase
 
-The repository currently has Supabase client helpers but no local `supabase/` migration folder. Phase 1 will add migrations, RLS, and seed DEMO data.
+The repository includes Supabase client helpers plus versioned SQL under `supabase/`.
+
+Apply Phase 1 in a Supabase project with:
+
+```bash
+supabase db push
+supabase db seed
+```
+
+If the Supabase CLI is not available, apply `supabase/migrations/20260720000100_phase1_core.sql` and then `supabase/seed.sql` through an approved database deployment path.
 
 ## Build Checks
 
@@ -41,3 +50,10 @@ The current `npm run build` command uses `next build --webpack` so local and CI 
 ## First Super Admin
 
 The first `super_admin` should be created by a controlled server-side or SQL process after Supabase Auth user creation. This process must not expose service role keys in browser code.
+
+Required steps:
+
+1. Create the user in Supabase Auth.
+2. Insert or update `public.profiles` with the Auth user id and organization id.
+3. Insert the `super_admin` role into `public.user_roles`.
+4. Confirm RLS access with a non-service-role session.

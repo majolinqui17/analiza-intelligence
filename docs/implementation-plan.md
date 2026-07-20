@@ -17,6 +17,20 @@
 - Add profile, role, and assignment queries.
 - Add country, company, and branch selection after login.
 
+Implemented in the Phase 1 baseline:
+
+- `supabase/migrations/20260720000100_phase1_core.sql`
+- `supabase/seed.sql`
+- protected context selection at `/protected/context`
+- protected overview handoff at `/protected/overview`
+- public sign-up disabled in visible UI
+
+Next Phase 1 hardening before production:
+
+- replace DEMO bootstrap context with live Supabase assignment queries
+- add a controlled first `super_admin` setup command or server-only action
+- add database-level tests against a local Supabase instance
+
 ## Phase 2: Layout, Navigation, Filters, DEMO Executive Dashboard
 
 - Replace starter UI.
@@ -64,4 +78,3 @@
 - Complete E2E coverage.
 - Harden security.
 - Finalize Supabase and deployment guides.
-

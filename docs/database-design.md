@@ -15,6 +15,24 @@ All primary identifiers use UUID. Operational and analytic records include these
 
 Patient names are not identifiers. Analytics uses anonymous patient references only.
 
+## Phase 1 Migration
+
+The first versioned migration is:
+
+```text
+supabase/migrations/20260720000100_phase1_core.sql
+```
+
+It creates the multi-tenant core for organizations, currencies, countries, companies, branches, profiles, roles, permissions, direct access assignments, branch managers, services, data sources, and audit logs. It also enables RLS on every Phase 1 table.
+
+The initial DEMO seed is:
+
+```text
+supabase/seed.sql
+```
+
+The seed includes the seven initial countries, three business units, sample DEMO branches, roles, and baseline permissions. It does not create real users.
+
 ## Operational Core
 
 Initial migrations will create:
@@ -122,4 +140,3 @@ Normalized statuses:
 - `unknown`
 
 Unknown source statuses must appear in data quality workflows.
-

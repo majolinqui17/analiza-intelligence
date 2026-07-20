@@ -33,6 +33,17 @@ RLS must enforce access by:
 
 Users only see assigned countries, companies, branches, and allowed consolidated views.
 
+Phase 1 adds RLS helper functions:
+
+- `current_user_is_super_admin`
+- `current_user_has_role`
+- `current_user_can_access_org`
+- `current_user_can_access_country`
+- `current_user_can_access_company`
+- `current_user_can_access_branch`
+
+These functions are used by policies on the initial tenant, catalog, assignment, data source, and audit tables.
+
 ## Secret Handling
 
 - Service role keys are server-only.
@@ -54,4 +65,3 @@ Users only see assigned countries, companies, branches, and allowed consolidated
 - Sanitize file names.
 - Preserve original uploads for traceability where appropriate.
 - Block dangerous spreadsheet formulas in generated CSV/XLSX exports.
-
