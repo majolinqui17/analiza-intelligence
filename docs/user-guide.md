@@ -31,6 +31,8 @@ The app header will keep persistent selectors for:
 - branch
 - period
 
+The protected header now stores these values in the browser under the Analiza context key so the selection survives navigation.
+
 ## Dashboards
 
 Every dashboard should show:
@@ -41,6 +43,14 @@ Every dashboard should show:
 - sources used
 - completeness percentage
 - DEMO label when applicable
+
+The Phase 2 executive dashboard is available at:
+
+```text
+/protected/overview
+```
+
+It uses DEMO values only and labels them visibly.
 
 ## Imports
 

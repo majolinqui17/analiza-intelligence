@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
-import { ContextOverview } from "@/components/context-overview";
+import { ExecutiveDashboard } from "@/components/executive-dashboard";
 import { createClient } from "@/lib/supabase/server";
 
 async function OverviewGate() {
@@ -12,7 +12,7 @@ async function OverviewGate() {
     redirect("/auth/login");
   }
 
-  return <ContextOverview />;
+  return <ExecutiveDashboard />;
 }
 
 export default function OverviewPage() {

@@ -38,6 +38,15 @@ Next Phase 1 hardening before production:
 - Add persistent context selector.
 - Add executive DEMO dashboard with data coverage labels.
 
+Implemented in the Phase 2 baseline:
+
+- protected app shell with collapsible sidebar
+- role-aware navigation definition with 21 requested modules
+- persistent header selector for country, company, branch, and period
+- executive DEMO dashboard at `/protected/overview`
+- placeholder protected module route for future phases
+- dashboard tests for navigation coverage, DEMO labels, and starter removal
+
 ## Phase 3: Appointments, Capacity, Occupancy, Branches, Managers
 
 - Add appointment and capacity facts.

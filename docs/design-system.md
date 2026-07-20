@@ -24,6 +24,8 @@ The product should feel executive, professional, clean, modern, responsive, acce
 - Avoid excessive gradients, decorative blobs, 3D charts, and unnecessary animation.
 - Every KPI needs a tooltip with definition, formula, source, and last update.
 
+Phase 2 uses a dense executive shell: collapsible sidebar, compact header filters, small KPI cards, and simple 2D bar visualizations. This keeps the BI surface scannable in meetings and avoids misleading decorative charts.
+
 ## Branding
 
 Do not invent the logo. Provide configurable slots for:
@@ -32,4 +34,3 @@ Do not invent the logo. Provide configurable slots for:
 - company logo
 - favicon
 - corporate colors
-

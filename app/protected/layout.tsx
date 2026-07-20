@@ -1,4 +1,6 @@
 import { AuthButton } from "@/components/auth-button";
+import { AppSidebar } from "@/components/app-sidebar";
+import { TenantContextHeader } from "@/components/tenant-context-header";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -9,18 +11,25 @@ export default function ProtectedLayout({
 }) {
   return (
     <main className="min-h-screen bg-muted/30">
-      <div className="flex min-h-screen w-full flex-col">
-        <nav className="border-b bg-background">
-          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 text-sm">
-            <Link href="/protected/context" className="font-semibold">
-              Analiza Intelligence
-            </Link>
-            <Suspense>
-              <AuthButton />
-            </Suspense>
-          </div>
-        </nav>
-        <div className="flex-1">{children}</div>
+      <div className="flex min-h-screen w-full">
+        <AppSidebar roleKey="super_admin" />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <nav className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
+            <div className="flex min-h-16 w-full flex-col gap-3 px-4 py-3 text-sm lg:flex-row lg:items-center lg:justify-between lg:px-5">
+              <Link
+                href="/protected/overview"
+                className="font-semibold lg:hidden"
+              >
+                Analiza Intelligence
+              </Link>
+              <TenantContextHeader />
+              <Suspense>
+                <AuthButton />
+              </Suspense>
+            </div>
+          </nav>
+          <div className="flex-1">{children}</div>
+        </div>
       </div>
     </main>
   );

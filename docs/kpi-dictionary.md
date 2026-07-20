@@ -77,6 +77,8 @@ rescheduled_appointments / applicable_scheduled_appointments
 - variance against prior period
 - variance against same period last year, when data exists
 
+The Phase 2 dashboard implements DEMO versions of these executive cards. Each card includes a tooltip with definition, formula, source, and last update.
+
 ## Financial Rules
 
 - Do not calculate net profit without complete operating expenses.
@@ -95,4 +97,3 @@ The manager performance index is configurable and must show component values sep
 - data quality
 
 Do not show a score when comparability, capacity, financial essentials, or data completeness are insufficient.
-

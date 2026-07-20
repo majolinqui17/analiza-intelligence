@@ -48,6 +48,8 @@ Each country will support its own currency, time zone, date format, tax placehol
 - Configuration
 - Audit
 
+Phase 2 creates navigation entries for all core product areas. Modules scheduled for later phases route to protected placeholders instead of public 404 pages.
+
 ## Non Goals For Early Phases
 
 - No public self-registration.
@@ -56,4 +58,3 @@ Each country will support its own currency, time zone, date format, tax placehol
 - No net income calculation until complete operating expenses exist.
 - No AI-dependent KPI calculation.
 - No automatic KPI extraction from PDF unless an approved parser exists.
-

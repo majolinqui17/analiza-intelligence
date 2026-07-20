@@ -200,7 +200,8 @@ export const roleKeys: RoleKey[] = [
   "viewer",
 ];
 
-export function getDefaultPeriod() {
-  return new Date().toISOString().slice(0, 7);
-}
+export const demoDefaultPeriod = "2026-07";
 
+export function getDefaultPeriod() {
+  return demoDefaultPeriod;
+}

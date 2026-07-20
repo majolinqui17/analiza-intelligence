@@ -32,16 +32,19 @@ Initial countries:
 
 ## Current Phase
 
-Phase 1 baseline is now in place:
+Phase 2 baseline is now in place:
 
 - Phase 0 documentation and agent rules
 - Supabase core migration and DEMO seed
 - RLS helper functions and policies
 - protected context selection
 - public self-registration disabled in the UI
+- executive shell with collapsible sidebar
+- persistent context selector in the protected header
+- executive DEMO dashboard with KPI cards, charts, sources, and insights
 - validation scripts
 
-The next phase will replace the remaining starter surfaces with the executive shell, role-aware navigation, filters, and DEMO dashboard.
+The next phase will deepen appointments, capacity, occupancy, branches, and manager views.
 
 ## Local Setup
 
