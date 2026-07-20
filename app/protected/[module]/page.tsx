@@ -1,5 +1,9 @@
 import { notFound } from "next/navigation";
 
+import {
+  OperationsModule,
+  operationsModuleSlugs,
+} from "@/components/operations-modules";
 import { Badge } from "@/components/ui/badge";
 import { navigationItems } from "@/lib/navigation";
 
@@ -28,6 +32,14 @@ export default async function ModulePage({ params }: ModulePageProps) {
   }
 
   const Icon = item.icon;
+
+  if (
+    operationsModuleSlugs.includes(
+      module as (typeof operationsModuleSlugs)[number],
+    )
+  ) {
+    return <OperationsModule module={module} />;
+  }
 
   return (
     <section className="flex w-full flex-col gap-6 px-4 py-6 lg:px-6">

@@ -116,3 +116,102 @@ from public.roles r
 join public.permissions p on p.key in ('context.read', 'imports.manage')
 where r.key = 'cargador_datos'
 on conflict do nothing;
+
+insert into public.branch_managers (id, organization_id, branch_id, display_name, email, is_demo, starts_on)
+values
+  ('80000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', 'Gerente DEMO Norte', 'gerente.norte.demo@example.com', true, '2026-01-01'),
+  ('80000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000002', 'Gerente DEMO Central', 'gerente.central.demo@example.com', true, '2026-01-01'),
+  ('80000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000003', 'Gerente DEMO Este', 'gerente.este.demo@example.com', true, '2026-01-01')
+on conflict (id) do update set
+  display_name = excluded.display_name,
+  email = excluded.email,
+  is_demo = excluded.is_demo,
+  starts_on = excluded.starts_on;
+
+insert into public.service_categories (id, organization_id, company_id, name, is_demo)
+values
+  ('81000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', 'Terapia DEMO', true),
+  ('81000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000002', 'Pruebas DEMO', true),
+  ('81000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000003', 'Estudios DEMO', true)
+on conflict (organization_id, company_id, name) do update set
+  is_demo = excluded.is_demo;
+
+insert into public.services (id, organization_id, company_id, category_id, code, name, is_demo)
+values
+  ('82000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', '81000000-0000-4000-8000-000000000001', 'FIS-DEMO-01', 'Sesion fisioterapia DEMO', true),
+  ('82000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000002', '81000000-0000-4000-8000-000000000002', 'LAB-DEMO-01', 'Prueba laboratorio DEMO', true),
+  ('82000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000003', '81000000-0000-4000-8000-000000000003', 'IMG-DEMO-01', 'Estudio imagenes DEMO', true)
+on conflict (organization_id, company_id, code) do update set
+  name = excluded.name,
+  is_demo = excluded.is_demo;
+
+insert into public.professionals (id, organization_id, country_id, company_id, branch_id, code, display_name, professional_type, is_demo)
+values
+  ('83000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', 'PRO-FIS-01', 'Profesional DEMO Fisio A', 'fisioterapeuta', true),
+  ('83000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000002', 'PRO-LAB-01', 'Profesional DEMO Lab A', 'tecnico_laboratorio', true),
+  ('83000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000003', '50000000-0000-4000-8000-000000000003', 'PRO-IMG-01', 'Profesional DEMO Imagen A', 'tecnico_imagenes', true)
+on conflict (organization_id, branch_id, code) do update set
+  display_name = excluded.display_name,
+  professional_type = excluded.professional_type,
+  is_demo = excluded.is_demo;
+
+insert into public.anonymous_patients (id, organization_id, anonymous_key, is_demo)
+values
+  ('84000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'DEMO-PATIENT-001', true),
+  ('84000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', 'DEMO-PATIENT-002', true),
+  ('84000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', 'DEMO-PATIENT-003', true)
+on conflict (organization_id, anonymous_key) do update set
+  is_demo = excluded.is_demo;
+
+insert into public.capacity_records (
+  id,
+  organization_id,
+  country_id,
+  company_id,
+  branch_id,
+  professional_id,
+  service_id,
+  period_start,
+  period_end,
+  available_minutes,
+  scheduled_minutes,
+  attended_minutes,
+  is_demo
+)
+values
+  ('85000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', '83000000-0000-4000-8000-000000000001', '82000000-0000-4000-8000-000000000001', '2026-07-01', '2026-07-31', 9600, 7680, 6720, true),
+  ('85000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000002', '83000000-0000-4000-8000-000000000002', '82000000-0000-4000-8000-000000000002', '2026-07-01', '2026-07-31', 8400, 6300, 5880, true),
+  ('85000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000003', '50000000-0000-4000-8000-000000000003', '83000000-0000-4000-8000-000000000003', '82000000-0000-4000-8000-000000000003', '2026-07-01', '2026-07-31', 7200, 5040, 4380, true)
+on conflict (id) do update set
+  available_minutes = excluded.available_minutes,
+  scheduled_minutes = excluded.scheduled_minutes,
+  attended_minutes = excluded.attended_minutes,
+  is_demo = excluded.is_demo;
+
+insert into public.appointments (
+  id,
+  organization_id,
+  country_id,
+  company_id,
+  branch_id,
+  professional_id,
+  service_id,
+  anonymous_patient_id,
+  external_reference,
+  scheduled_start_at,
+  scheduled_end_at,
+  scheduled_minutes,
+  attended_minutes,
+  normalized_status,
+  original_status,
+  is_demo
+)
+values
+  ('86000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', '83000000-0000-4000-8000-000000000001', '82000000-0000-4000-8000-000000000001', '84000000-0000-4000-8000-000000000001', 'DEMO-APT-001', '2026-07-06 09:00:00-06', '2026-07-06 10:00:00-06', 60, 60, 'completed', 'Completada DEMO', true),
+  ('86000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', '83000000-0000-4000-8000-000000000001', '82000000-0000-4000-8000-000000000001', '84000000-0000-4000-8000-000000000002', 'DEMO-APT-002', '2026-07-06 10:00:00-06', '2026-07-06 11:00:00-06', 60, 0, 'no_show', 'No asistio DEMO', true),
+  ('86000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000002', '83000000-0000-4000-8000-000000000002', '82000000-0000-4000-8000-000000000002', '84000000-0000-4000-8000-000000000003', 'DEMO-APT-003', '2026-07-07 08:00:00-06', '2026-07-07 08:30:00-06', 30, 30, 'completed', 'Entregada DEMO', true)
+on conflict (id) do update set
+  normalized_status = excluded.normalized_status,
+  original_status = excluded.original_status,
+  attended_minutes = excluded.attended_minutes,
+  is_demo = excluded.is_demo;

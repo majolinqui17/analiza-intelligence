@@ -44,6 +44,8 @@ Phase 1 adds RLS helper functions:
 
 These functions are used by policies on the initial tenant, catalog, assignment, data source, and audit tables.
 
+Phase 3 extends RLS to appointments, capacity, professionals, anonymous patients, and service events. Operational reads are scoped through `current_user_can_access_branch`.
+
 ## Secret Handling
 
 - Service role keys are server-only.

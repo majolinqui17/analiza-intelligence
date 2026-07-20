@@ -52,6 +52,17 @@ The Phase 2 executive dashboard is available at:
 
 It uses DEMO values only and labels them visibly.
 
+## Operational Views
+
+Phase 3 adds DEMO operational views:
+
+- `/protected/citas`
+- `/protected/capacidad`
+- `/protected/sucursales`
+- `/protected/gerentes`
+
+Manager performance uses separated components and does not present a score when capacity or data completeness is insufficient.
+
 ## Imports
 
 The import center guides users through template download, file upload, column mapping, validation, preview, error review, confirmation, processing, and audit history.

@@ -10,6 +10,8 @@ Pendiente de cargar capacidad disponible
 
 No future appointments are included in historical compliance indicators.
 
+Phase 3 implements the formulas in `lib/analytics/operations.ts` and keeps zero-capacity results as `null` so the UI can show pending capacity instead of estimating silently.
+
 ## Occupancy
 
 Scheduled occupancy:

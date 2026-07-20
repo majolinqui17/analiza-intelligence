@@ -33,6 +33,16 @@ supabase/seed.sql
 
 The seed includes the seven initial countries, three business units, sample DEMO branches, roles, and baseline permissions. It does not create real users.
 
+## Phase 3 Operational Migration
+
+The operational migration is:
+
+```text
+supabase/migrations/20260720000200_phase3_operations.sql
+```
+
+It adds appointment status catalog, professionals, professional schedules, anonymous patients, appointments, appointment status history, capacity records, service events, `safe_ratio`, and `v_branch_capacity_summary` with `security_invoker` so RLS is respected.
+
 ## Operational Core
 
 Initial migrations will create:

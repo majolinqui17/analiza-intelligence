@@ -50,6 +50,8 @@ PDF files may be stored as documentary backup, but must not generate KPIs automa
 
 No error may import silently.
 
+Phase 3 stores unknown normalized appointment statuses as `unknown` so they can be surfaced in data quality instead of being hidden in KPI calculations.
+
 ## Error Handling
 
 Users can download an error report, correct mapping, retry, cancel, view history, and request reversal when no later dependency exists.
@@ -74,4 +76,3 @@ Initial downloadable templates:
 - CRM and referrers
 
 Each template includes instructions, column definitions, required fields, expected format, DEMO examples, valid catalogs, frequent errors, and template version.
-

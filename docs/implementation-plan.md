@@ -53,6 +53,15 @@ Implemented in the Phase 2 baseline:
 - Add normalized status mapping.
 - Add occupancy formulas and manager branch views.
 
+Implemented in the Phase 3 baseline:
+
+- `supabase/migrations/20260720000200_phase3_operations.sql`
+- normalized appointment status catalog
+- operational tables for appointments, capacity, professionals, schedules, anonymous patients, and service events
+- pure TypeScript formulas for occupancy, attendance gap, completion, cancellation, no-show, and reschedule rates
+- DEMO views for `/protected/citas`, `/protected/capacidad`, `/protected/sucursales`, and `/protected/gerentes`
+- tests for formulas, migration coverage, and manager data sufficiency messaging
+
 ## Phase 4: Fisioterapia, Laboratorio, Imagenes
 
 - Add unit-specific facts, templates, and dashboards.

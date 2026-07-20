@@ -32,7 +32,7 @@ Initial countries:
 
 ## Current Phase
 
-Phase 2 baseline is now in place:
+Phase 3 baseline is now in place:
 
 - Phase 0 documentation and agent rules
 - Supabase core migration and DEMO seed
@@ -42,9 +42,12 @@ Phase 2 baseline is now in place:
 - executive shell with collapsible sidebar
 - persistent context selector in the protected header
 - executive DEMO dashboard with KPI cards, charts, sources, and insights
+- operational migration for appointments, capacity, services, professionals, and normalized statuses
+- DEMO views for appointments, capacity, branches, and manager performance
+- pure occupancy and appointment-rate formulas with tests
 - validation scripts
 
-The next phase will deepen appointments, capacity, occupancy, branches, and manager views.
+The next phase will add unit-specific Fisioterapia, Laboratorio, and Imagenes modules.
 
 ## Local Setup
 
