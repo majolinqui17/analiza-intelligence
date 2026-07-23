@@ -4,6 +4,7 @@ import {
   OperationsModule,
   operationsModuleSlugs,
 } from "@/components/operations-modules";
+import { ImportOperationsDashboard } from "@/components/import-operations-dashboard";
 import { Badge } from "@/components/ui/badge";
 import { navigationItems } from "@/lib/navigation";
 
@@ -32,6 +33,10 @@ export default async function ModulePage({ params }: ModulePageProps) {
   }
 
   const Icon = item.icon;
+
+  if (module === "importaciones") {
+    return <ImportOperationsDashboard />;
+  }
 
   if (
     operationsModuleSlugs.includes(

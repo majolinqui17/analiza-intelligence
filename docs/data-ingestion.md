@@ -1,5 +1,9 @@
 # Data Ingestion
 
+See also [Import operations playbook](import-operations-playbook.md) for the
+business-line upload catalog, connector fallback model, versioning rules and
+publication controls used by the Importaciones screen.
+
 ## Import Assistant
 
 The import center uses this flow:
@@ -76,3 +80,7 @@ Initial downloadable templates:
 - CRM and referrers
 
 Each template includes instructions, column definitions, required fields, expected format, DEMO examples, valid catalogs, frequent errors, and template version.
+
+Connectors and bulk document uploads must publish into the same staging and
+analytics contracts. Switching from a manual template to a connector should
+change source lineage, not KPI definitions.
