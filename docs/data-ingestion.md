@@ -4,6 +4,10 @@ See also [Import operations playbook](import-operations-playbook.md) for the
 business-line upload catalog, connector fallback model, versioning rules and
 publication controls used by the Importaciones screen.
 
+See also [Template download library](template-download-library.md) for the
+Plantillas screen, package downloads by business line and last-upload workbook
+contract.
+
 ## Import Assistant
 
 The import center uses this flow:

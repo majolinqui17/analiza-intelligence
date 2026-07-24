@@ -5,6 +5,7 @@ import {
   operationsModuleSlugs,
 } from "@/components/operations-modules";
 import { ImportOperationsDashboard } from "@/components/import-operations-dashboard";
+import { TemplateLibraryDashboard } from "@/components/template-library-dashboard";
 import { Badge } from "@/components/ui/badge";
 import { navigationItems } from "@/lib/navigation";
 
@@ -36,6 +37,10 @@ export default async function ModulePage({ params }: ModulePageProps) {
 
   if (module === "importaciones") {
     return <ImportOperationsDashboard />;
+  }
+
+  if (module === "plantillas") {
+    return <TemplateLibraryDashboard />;
   }
 
   if (
