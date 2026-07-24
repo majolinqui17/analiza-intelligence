@@ -56,6 +56,19 @@ La validacion por pestana revisa:
 
 Cuando una pantalla queda `Cargada` o `Muy cargada`, AnaliA no inventa informacion: reordena la lectura, resalta graficas, reduce friccion visual y deja visible que la vista esta en modo DEMO.
 
+## Burbuja de chat global
+
+AnaliA esta disponible como burbuja flotante en las pantallas protegidas. El usuario puede pedir:
+
+- resumen de los insights mas importantes de la pantalla;
+- revision de elementos criticos;
+- lectura de la pantalla visible;
+- siguiente accion sugerida.
+
+El chat usa la linea de negocio activa, el modulo actual, la auditoria visual y el texto visible de la pantalla. En esta fase responde con un motor `DEMO` deterministico; no consulta datos privados, no ejecuta acciones y no presenta resultados como reales.
+
+Cada respuesta muestra fuentes usadas, confianza y una cautela. Si el usuario pide algo critico, AnaliA prioriza senales como riesgo, pendiente, alerta, densidad visual o falta de trazabilidad.
+
 ## Seguridad y permisos
 
 AnaliA solo prepara interpretaciones y borradores de accion. No ejecuta acciones sensibles sin confirmacion humana. Credenciales de conectores, llaves privilegiadas y validaciones de archivos deben permanecer en servidor.

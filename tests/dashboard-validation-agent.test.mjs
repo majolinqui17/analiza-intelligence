@@ -36,6 +36,10 @@ for (const requiredModelText of [
   "Predictivo",
   "getDashboardAuditForPath",
   "getDashboardValidationSummary",
+  "AnaliaScreenChatResponse",
+  "createAnaliaScreenChatResponse",
+  "detectChatIntent",
+  "getScreenSignals",
   "dataStatus: \"DEMO\"",
   "/protected/overview",
   "/protected/operacion",
@@ -60,10 +64,18 @@ for (const requiredModelText of [
 
 for (const requiredComponentText of [
   "DashboardValidationAgent",
+  "Hablar con AnaliA",
+  "Preguntar a AnaliA sobre esta pantalla",
+  "Resumeme los insights mas importantes",
+  "Hay algo critico?",
+  "Lee esta pantalla",
+  "Que hago primero?",
+  "getReadableScreenText",
+  "createAnaliaScreenChatResponse",
+  "Fuentes:",
   "data-analia-dashboard-mode",
   "data-analia-dashboard-density",
-  "AnaliA valido",
-  "vista {audit.readingMode}",
+  "Chat con AnaliA",
   "Ajustes aplicados",
   "Validacion",
   "usePathname",
@@ -93,6 +105,9 @@ for (const requiredDocsText of [
   "Lectura visual correcta",
   "Cargada",
   "Muy cargada",
+  "Burbuja de chat global",
+  "lectura de la pantalla visible",
+  "motor `DEMO` deterministico",
 ]) {
   if (!docs.includes(requiredDocsText)) {
     throw new Error(`AnaliA docs are missing: ${requiredDocsText}`);
