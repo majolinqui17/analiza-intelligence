@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { BusinessLineThemeProvider } from "@/components/business-line-theme-provider";
+import { DashboardValidationAgent } from "@/components/dashboard-validation-agent";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -28,7 +29,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <BusinessLineThemeProvider>{children}</BusinessLineThemeProvider>
+          <BusinessLineThemeProvider>
+            {children}
+            <DashboardValidationAgent />
+          </BusinessLineThemeProvider>
         </ThemeProvider>
       </body>
     </html>

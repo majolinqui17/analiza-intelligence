@@ -42,6 +42,20 @@ La interfaz muestra un ciclo de monitoreo visible. En produccion, el ciclo debe 
 - Crear alertas tempranas.
 - Registrar auditoria de fuentes, formulas, filtros y version de modelo.
 
+## Auditoria visual de dashboards
+
+AnaliA tambien revisa cada pestana del BI como una superficie de decision. La auditoria clasifica cada pantalla como `Lectura visual correcta`, `Cargada` o `Muy cargada`, y activa una vista visual cuando la densidad de contenido puede dificultar la lectura ejecutiva.
+
+La validacion por pestana revisa:
+
+- KPI principal visible antes del detalle.
+- Comparacion contra meta, periodo anterior o ano anterior.
+- Grafica prioritaria para leer la decision sin depender de texto largo.
+- Insight accionable con responsable sugerido.
+- Estado DEMO, pendiente o dato real claramente marcado.
+
+Cuando una pantalla queda `Cargada` o `Muy cargada`, AnaliA no inventa informacion: reordena la lectura, resalta graficas, reduce friccion visual y deja visible que la vista esta en modo DEMO.
+
 ## Seguridad y permisos
 
 AnaliA solo prepara interpretaciones y borradores de accion. No ejecuta acciones sensibles sin confirmacion humana. Credenciales de conectores, llaves privilegiadas y validaciones de archivos deben permanecer en servidor.
