@@ -14,6 +14,17 @@ The product should feel executive, professional, clean, modern, responsive, acce
 - Green only for positive outcomes.
 - Amber for warnings and incomplete data.
 
+## Business Line Identity
+
+The protected BI shell uses one accent color per active business line. The global selector writes the selected context, and the shell applies `data-business-line-theme` so navigation, primary actions, active states and chart variables inherit the correct color.
+
+- Consolidado keeps the executive navy.
+- Laboratorio uses indigo as its operating identity.
+- Fisioterapia uses teal/green as its operating identity.
+- Imagenes uses diagnostic blue as its operating identity.
+
+Line colors identify scope; they do not replace semantic colors. Red remains risk, amber remains warning or incomplete data, and green remains positive performance unless the active line is Fisioterapia.
+
 ## Component Guidance
 
 - Use accessible reusable components.

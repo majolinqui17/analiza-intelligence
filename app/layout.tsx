@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { BusinessLineThemeProvider } from "@/components/business-line-theme-provider";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -27,7 +28,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <BusinessLineThemeProvider>{children}</BusinessLineThemeProvider>
         </ThemeProvider>
       </body>
     </html>
