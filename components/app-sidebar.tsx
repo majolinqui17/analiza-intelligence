@@ -12,9 +12,15 @@ import {
   navigationItems,
   type NavigationItem,
 } from "@/lib/navigation";
-import type { RoleKey } from "@/lib/tenant/demo-context";
+import {
+  demoRoleProfiles,
+  roleKeys,
+  type RoleKey,
+} from "@/lib/tenant/demo-context";
 
 const storageKey = "analiza:sidebar-collapsed";
+const roleStorageKey = "analiza:demo-role";
+const roleChangeEvent = "analiza:role-change";
 
 type AppSidebarProps = {
   roleKey: RoleKey;
@@ -27,10 +33,17 @@ function isActive(pathname: string, item: NavigationItem) {
 export function AppSidebar({ roleKey }: AppSidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const visibleItems = getNavigationForRole(roleKey);
+  const [activeRole, setActiveRole] = useState<RoleKey>(roleKey);
+  const visibleItems = getNavigationForRole(activeRole);
+  const roleProfile = demoRoleProfiles[activeRole];
 
   useEffect(() => {
     setCollapsed(window.localStorage.getItem(storageKey) === "true");
+    const storedRole = window.localStorage.getItem(roleStorageKey);
+
+    if (roleKeys.includes(storedRole as RoleKey)) {
+      setActiveRole(storedRole as RoleKey);
+    }
   }, []);
 
   function toggleCollapsed() {
@@ -39,6 +52,12 @@ export function AppSidebar({ roleKey }: AppSidebarProps) {
       window.localStorage.setItem(storageKey, String(nextValue));
       return nextValue;
     });
+  }
+
+  function changeRole(nextRole: RoleKey) {
+    setActiveRole(nextRole);
+    window.localStorage.setItem(roleStorageKey, nextRole);
+    window.dispatchEvent(new Event(roleChangeEvent));
   }
 
   return (
@@ -100,16 +119,30 @@ export function AppSidebar({ roleKey }: AppSidebarProps) {
       </nav>
 
       <div className="border-t p-3">
-        <div
-          className={cn(
-            "rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground",
-            collapsed && "sr-only",
-          )}
-        >
-          {visibleItems.length} de {navigationItems.length} modulos visibles
+        <div className={cn("grid gap-2", collapsed && "sr-only")}>
+          <label className="grid gap-1 text-xs">
+            <span className="font-medium text-foreground">Rol DEMO</span>
+            <select
+              className="h-9 rounded-md border bg-background px-2 text-xs outline-none"
+              value={activeRole}
+              onChange={(event) => changeRole(event.target.value as RoleKey)}
+            >
+              {roleKeys.map((role) => (
+                <option key={role} value={role}>
+                  {demoRoleProfiles[role].label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="rounded-md bg-muted px-3 py-2 text-xs leading-5 text-muted-foreground">
+            <div className="font-medium text-foreground">{roleProfile.label}</div>
+            <div>{roleProfile.accessSummary}</div>
+            <div className="mt-1">
+              {visibleItems.length} de {navigationItems.length} modulos visibles
+            </div>
+          </div>
         </div>
       </div>
     </aside>
   );
 }
-

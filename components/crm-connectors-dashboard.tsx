@@ -21,16 +21,10 @@ import {
   maskDemoApiKey,
   type BusinessControlLine,
 } from "@/lib/analytics/business-control-center";
-
-const lineOptions: BusinessControlLine[] = [
-  "Laboratorio",
-  "Fisioterapia",
-  "Imagenes",
-];
+import { useActiveBusinessLine } from "@/hooks/use-active-business-line";
 
 export function CrmConnectorsDashboard() {
-  const [selectedLine, setSelectedLine] =
-    useState<BusinessControlLine>("Laboratorio");
+  const activeBusinessLine = useActiveBusinessLine();
   const [baseUrl, setBaseUrl] = useState("https://crm.analiza.local");
   const [demoKeys, setDemoKeys] = useState<Record<BusinessControlLine, string>>({
     Fisioterapia: maskDemoApiKey("az_fis_demo", "F3P8"),
@@ -38,17 +32,22 @@ export function CrmConnectorsDashboard() {
     Laboratorio: maskDemoApiKey("az_lab_demo", "L7A2"),
   });
   const [notice, setNotice] = useState<string | null>(null);
-  const selectedPlan = useMemo(
-    () => crmConnectorPlans.find((plan) => plan.line === selectedLine) ?? crmConnectorPlans[0],
-    [selectedLine],
+  const visiblePlans = useMemo(
+    () =>
+      activeBusinessLine.isConsolidated
+        ? crmConnectorPlans
+        : crmConnectorPlans.filter(
+            (plan) => plan.line === activeBusinessLine.line,
+          ),
+    [activeBusinessLine.isConsolidated, activeBusinessLine.line],
   );
 
-  function generateDemoKey() {
-    const key = buildDemoApiKey(selectedPlan.keyPrefix);
+  function generateDemoKey(line: BusinessControlLine, keyPrefix: string) {
+    const key = buildDemoApiKey(keyPrefix);
 
     setDemoKeys((current) => ({
       ...current,
-      [selectedPlan.line]: key,
+      [line]: key,
     }));
     setNotice(
       "Llave DEMO generada para validar el flujo. En produccion la llave real debe generarse en servidor y guardarse en secreto.",
@@ -112,26 +111,22 @@ export function CrmConnectorsDashboard() {
         </div>
       ) : null}
 
-      <section className="grid gap-3 md:grid-cols-[220px_1fr]">
-        <div className="rounded-md border bg-card p-3">
-          <div className="mb-3 text-sm font-medium">Linea a conectar</div>
-          <div className="grid gap-2">
-            {lineOptions.map((line) => (
-              <Button
-                className="justify-start"
-                key={line}
-                onClick={() => setSelectedLine(line)}
-                type="button"
-                variant={selectedLine === line ? "default" : "outline"}
-              >
-                <PlugZap className="size-4" />
-                {line}
-              </Button>
-            ))}
+      <section className="grid gap-4">
+        <div className="rounded-md border bg-card p-4">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <PlugZap className="size-4 text-primary" />
+            <span className="font-medium">Filtro superior activo:</span>
+            <Badge variant="outline">{activeBusinessLine.line}</Badge>
+            <span className="text-muted-foreground">
+              {activeBusinessLine.isConsolidated
+                ? "Se muestran todas las lineas. Elige una linea arriba para concentrar la configuracion."
+                : "Solo se muestran endpoints y requisitos de esta linea."}
+            </span>
           </div>
         </div>
 
-        <div className="rounded-md border bg-card p-4">
+        {visiblePlans.map((selectedPlan) => (
+          <div className="rounded-md border bg-card p-4" key={selectedPlan.line}>
           <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -154,7 +149,13 @@ export function CrmConnectorsDashboard() {
               <div className="break-all rounded-md bg-muted px-3 py-2 font-mono text-xs">
                 {demoKeys[selectedPlan.line]}
               </div>
-              <Button className="mt-3 w-full" onClick={generateDemoKey} type="button">
+              <Button
+                className="mt-3 w-full"
+                onClick={() =>
+                  generateDemoKey(selectedPlan.line, selectedPlan.keyPrefix)
+                }
+                type="button"
+              >
                 Generar llave DEMO
               </Button>
             </div>
@@ -257,6 +258,7 @@ export function CrmConnectorsDashboard() {
             </aside>
           </div>
         </div>
+        ))}
       </section>
     </section>
   );

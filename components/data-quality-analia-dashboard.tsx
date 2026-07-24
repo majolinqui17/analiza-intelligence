@@ -18,6 +18,7 @@ import {
   analiaQualitySuggestions,
   type AnaliaQualitySuggestion,
 } from "@/lib/analytics/business-control-center";
+import { useActiveBusinessLine } from "@/hooks/use-active-business-line";
 import { cn } from "@/lib/utils";
 
 function priorityClass(priority: AnaliaQualitySuggestion["priority"]) {
@@ -44,11 +45,25 @@ function ProgressBar({ value }: { value: number }) {
 }
 
 export function DataQualityAnaliaDashboard() {
+  const activeBusinessLine = useActiveBusinessLine();
   const [appliedIds, setAppliedIds] = useState<Set<string>>(() => new Set());
-  const pendingSuggestions = analiaQualitySuggestions.filter(
+  const visibleSuggestions = useMemo(
+    () =>
+      activeBusinessLine.isConsolidated
+        ? analiaQualitySuggestions
+        : analiaQualitySuggestions.filter(
+            (suggestion) =>
+              suggestion.line === activeBusinessLine.line ||
+              suggestion.line === "Consolidado",
+          ),
+    [activeBusinessLine.isConsolidated, activeBusinessLine.line],
+  );
+  const pendingSuggestions = visibleSuggestions.filter(
     (suggestion) => !appliedIds.has(suggestion.id),
   );
-  const appliedCount = appliedIds.size;
+  const appliedCount = visibleSuggestions.filter((suggestion) =>
+    appliedIds.has(suggestion.id),
+  ).length;
   const qualityScore = useMemo(
     () => Math.min(94, 72 + appliedCount * 5),
     [appliedCount],
@@ -71,6 +86,7 @@ export function DataQualityAnaliaDashboard() {
               Entorno DEMO
             </Badge>
             <Badge variant="outline">Recomendaciones aplicables por AnaliA</Badge>
+            <Badge variant="outline">Filtro: {activeBusinessLine.line}</Badge>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-md border bg-card">
@@ -105,8 +121,16 @@ export function DataQualityAnaliaDashboard() {
 
       <section className="grid gap-3 md:grid-cols-4">
         {[
-          { icon: FileSpreadsheet, label: "Plantillas", value: "4 mejoras" },
-          { icon: BarChart3, label: "Dashboards", value: "5 lecturas" },
+          {
+            icon: FileSpreadsheet,
+            label: "Plantillas",
+            value: `${visibleSuggestions.filter((item) => item.target === "Plantilla de resultados").length} mejoras`,
+          },
+          {
+            icon: BarChart3,
+            label: "Dashboards",
+            value: `${visibleSuggestions.filter((item) => item.target === "Dashboard").length} lecturas`,
+          },
           { icon: ClipboardCheck, label: "Aplicadas", value: `${appliedCount}` },
           { icon: Lightbulb, label: "Pendientes", value: `${pendingSuggestions.length}` },
         ].map((metric) => {
@@ -126,7 +150,7 @@ export function DataQualityAnaliaDashboard() {
 
       <section className="grid gap-4 xl:grid-cols-[1fr_360px]">
         <div className="grid gap-3">
-          {analiaQualitySuggestions.map((suggestion) => {
+          {visibleSuggestions.map((suggestion) => {
             const applied = appliedIds.has(suggestion.id);
 
             return (

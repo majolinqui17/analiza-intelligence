@@ -19,6 +19,7 @@ import {
   goalStrategySuggestions,
   type GoalStrategySuggestion,
 } from "@/lib/analytics/business-control-center";
+import { useActiveBusinessLine } from "@/hooks/use-active-business-line";
 
 function confidenceClass(confidence: GoalStrategySuggestion["confidence"]) {
   if (confidence === "Alta") {
@@ -48,7 +49,29 @@ function ProgressBar({ value }: { value: number }) {
 }
 
 export function GoalsAdvancesDashboard() {
+  const activeBusinessLine = useActiveBusinessLine();
   const [approvedIds, setApprovedIds] = useState<Set<string>>(() => new Set());
+  const visibleGoalSuggestions =
+    activeBusinessLine.isConsolidated
+      ? goalStrategySuggestions
+      : goalStrategySuggestions.filter(
+          (goal) => goal.line === activeBusinessLine.line,
+        );
+  const visibleApprovedCount = visibleGoalSuggestions.filter((goal) =>
+    approvedIds.has(goal.id),
+  ).length;
+  const visibleBonusTotal = visibleGoalSuggestions.reduce(
+    (total, goal) => total + goal.bonusPoolSuggestion,
+    0,
+  );
+  const averageRoi =
+    visibleGoalSuggestions.length > 0
+      ? visibleGoalSuggestions.reduce(
+          (total, goal) =>
+            total + (goal.simulatedRoiLow + goal.simulatedRoiHigh) / 2,
+          0,
+        ) / visibleGoalSuggestions.length
+      : 0;
 
   function toggleApproval(id: string) {
     setApprovedIds((current) => {
@@ -73,6 +96,7 @@ export function GoalsAdvancesDashboard() {
               Entorno DEMO
             </Badge>
             <Badge variant="outline">Sugerencias cautelosas, no automaticas</Badge>
+            <Badge variant="outline">Filtro: {activeBusinessLine.line}</Badge>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-md border bg-card">
@@ -106,10 +130,10 @@ export function GoalsAdvancesDashboard() {
 
       <section className="grid gap-3 md:grid-cols-4">
         {[
-          { icon: Target, label: "Metas sugeridas", value: goalStrategySuggestions.length },
-          { icon: CheckCircle2, label: "Aprobadas DEMO", value: approvedIds.size },
-          { icon: BadgeDollarSign, label: "Bonos sugeridos", value: formatMoney(goalStrategySuggestions.reduce((total, goal) => total + goal.bonusPoolSuggestion, 0)) },
-          { icon: TrendingUp, label: "ROI medio", value: "1.49x" },
+          { icon: Target, label: "Metas sugeridas", value: visibleGoalSuggestions.length },
+          { icon: CheckCircle2, label: "Aprobadas DEMO", value: visibleApprovedCount },
+          { icon: BadgeDollarSign, label: "Bonos sugeridos", value: formatMoney(visibleBonusTotal) },
+          { icon: TrendingUp, label: "ROI medio", value: `${averageRoi.toFixed(2)}x` },
         ].map((metric) => {
           const Icon = metric.icon;
 
@@ -126,7 +150,7 @@ export function GoalsAdvancesDashboard() {
       </section>
 
       <section className="grid gap-4">
-        {goalStrategySuggestions.map((goal) => {
+        {visibleGoalSuggestions.map((goal) => {
           const approved = approvedIds.has(goal.id);
           const targetProgress =
             (goal.currentMonthlyRevenue / goal.suggestedGoalRevenue) * 100;
@@ -232,6 +256,13 @@ export function GoalsAdvancesDashboard() {
             </article>
           );
         })}
+        {visibleGoalSuggestions.length === 0 ? (
+          <article className="rounded-md border bg-card p-6 text-sm text-muted-foreground">
+            No hay metas sugeridas para el filtro superior actual. Selecciona
+            otra linea de negocio o carga plantillas suficientes para generar
+            sugerencias cautelosas.
+          </article>
+        ) : null}
       </section>
     </section>
   );

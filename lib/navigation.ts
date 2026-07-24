@@ -32,61 +32,61 @@ export type NavigationItem = {
   allowedRoles: RoleKey[];
 };
 
-const executiveRoles: RoleKey[] = [
-  "super_admin",
-  "director_ejecutivo_grupo",
-  "director_pais",
-  "director_empresa",
-  "director_financiero",
-  "director_operaciones",
-  "analista_bi",
-  "auditor",
-  "viewer",
+const allRoles: RoleKey[] = [
+  "webmaster_admin",
+  "ceo",
+  "gerente_operaciones",
+  "gerente_sucursal",
 ];
+
+const executiveRoles: RoleKey[] = ["webmaster_admin", "ceo"];
 
 const operationsRoles: RoleKey[] = [
-  "super_admin",
-  "director_ejecutivo_grupo",
-  "director_pais",
-  "director_empresa",
-  "director_operaciones",
+  "webmaster_admin",
+  "ceo",
+  "gerente_operaciones",
   "gerente_sucursal",
-  "analista_bi",
-  "auditor",
-  "viewer",
 ];
 
-const dataRoles: RoleKey[] = [
-  "super_admin",
-  "director_ejecutivo_grupo",
-  "analista_bi",
-  "cargador_datos",
-  "auditor",
+const businessLineRoles: RoleKey[] = [
+  "webmaster_admin",
+  "ceo",
+  "gerente_operaciones",
+  "gerente_sucursal",
 ];
 
-const adminRoles: RoleKey[] = ["super_admin"];
+const dataUploadRoles: RoleKey[] = ["webmaster_admin", "gerente_operaciones"];
+
+const dataReadRoles: RoleKey[] = [
+  "webmaster_admin",
+  "ceo",
+  "gerente_operaciones",
+  "gerente_sucursal",
+];
+
+const adminRoles: RoleKey[] = ["webmaster_admin"];
 
 export const navigationItems: NavigationItem[] = [
   {
     title: "Resumen ejecutivo",
     href: "/protected/overview",
     icon: LayoutDashboard,
-    allowedRoles: executiveRoles,
+    allowedRoles: allRoles,
   },
   {
-    title: "Operacion",
+    title: "Operacion ejecutiva",
     href: "/protected/operacion",
     icon: Activity,
     allowedRoles: operationsRoles,
   },
   {
-    title: "Finanzas",
+    title: "Salud financiera",
     href: "/protected/finanzas",
     icon: BriefcaseBusiness,
-    allowedRoles: executiveRoles,
+    allowedRoles: dataReadRoles,
   },
   {
-    title: "Citas",
+    title: "Citas por negocio",
     href: "/protected/citas",
     icon: CalendarClock,
     allowedRoles: operationsRoles,
@@ -104,40 +104,40 @@ export const navigationItems: NavigationItem[] = [
     allowedRoles: operationsRoles,
   },
   {
-    title: "Gerentes",
+    title: "Gerentes y bonos",
     href: "/protected/gerentes",
     icon: UsersRound,
-    allowedRoles: operationsRoles,
+    allowedRoles: businessLineRoles,
   },
   {
     title: "Profesionales",
     href: "/protected/profesionales",
     icon: Stethoscope,
-    allowedRoles: operationsRoles,
+    allowedRoles: businessLineRoles,
   },
   {
     title: "Servicios",
     href: "/protected/servicios",
     icon: ClipboardCheck,
-    allowedRoles: operationsRoles,
+    allowedRoles: businessLineRoles,
   },
   {
     title: "Fisioterapia",
     href: "/protected/fisioterapia",
     icon: HeartPulse,
-    allowedRoles: operationsRoles,
+    allowedRoles: businessLineRoles,
   },
   {
     title: "Laboratorio",
     href: "/protected/laboratorio",
     icon: FlaskConical,
-    allowedRoles: operationsRoles,
+    allowedRoles: businessLineRoles,
   },
   {
     title: "Imagenes",
     href: "/protected/imagenes",
     icon: ImagePlus,
-    allowedRoles: operationsRoles,
+    allowedRoles: businessLineRoles,
   },
   {
     title: "Insights",
@@ -149,31 +149,31 @@ export const navigationItems: NavigationItem[] = [
     title: "Importaciones",
     href: "/protected/importaciones",
     icon: Import,
-    allowedRoles: dataRoles,
+    allowedRoles: dataUploadRoles,
   },
   {
     title: "Plantillas",
     href: "/protected/plantillas",
     icon: FileSpreadsheet,
-    allowedRoles: dataRoles,
+    allowedRoles: dataReadRoles,
   },
   {
     title: "Conectores",
     href: "/protected/conectores",
     icon: DatabaseZap,
-    allowedRoles: dataRoles,
+    allowedRoles: adminRoles,
   },
   {
     title: "Calidad de datos",
     href: "/protected/calidad-datos",
     icon: ShieldCheck,
-    allowedRoles: dataRoles,
+    allowedRoles: dataReadRoles,
   },
   {
-    title: "Metas",
+    title: "Metas y avances",
     href: "/protected/metas",
     icon: Goal,
-    allowedRoles: executiveRoles,
+    allowedRoles: operationsRoles,
   },
   {
     title: "Usuarios y permisos",
@@ -182,20 +182,19 @@ export const navigationItems: NavigationItem[] = [
     allowedRoles: adminRoles,
   },
   {
-    title: "Configuracion",
+    title: "Mi cuenta",
     href: "/protected/configuracion",
     icon: Settings,
-    allowedRoles: adminRoles,
+    allowedRoles: allRoles,
   },
   {
     title: "Auditoria",
     href: "/protected/auditoria",
     icon: BarChart3,
-    allowedRoles: ["super_admin", "auditor", "analista_bi"],
+    allowedRoles: executiveRoles,
   },
 ];
 
 export function getNavigationForRole(roleKey: RoleKey) {
   return navigationItems.filter((item) => item.allowedRoles.includes(roleKey));
 }
-
