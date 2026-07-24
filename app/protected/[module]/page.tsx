@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
 
+import { CrmConnectorsDashboard } from "@/components/crm-connectors-dashboard";
+import { DataQualityAnaliaDashboard } from "@/components/data-quality-analia-dashboard";
 import {
   OperationsModule,
   operationsModuleSlugs,
 } from "@/components/operations-modules";
 import { ImportOperationsDashboard } from "@/components/import-operations-dashboard";
+import { GoalsAdvancesDashboard } from "@/components/goals-advances-dashboard";
 import { TemplateLibraryDashboard } from "@/components/template-library-dashboard";
 import { Badge } from "@/components/ui/badge";
 import { navigationItems } from "@/lib/navigation";
@@ -41,6 +44,18 @@ export default async function ModulePage({ params }: ModulePageProps) {
 
   if (module === "plantillas") {
     return <TemplateLibraryDashboard />;
+  }
+
+  if (module === "conectores") {
+    return <CrmConnectorsDashboard />;
+  }
+
+  if (module === "calidad-datos") {
+    return <DataQualityAnaliaDashboard />;
+  }
+
+  if (module === "metas") {
+    return <GoalsAdvancesDashboard />;
   }
 
   if (
