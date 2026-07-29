@@ -888,11 +888,11 @@ function MetricTrendPanel({
     : null;
 
   return (
-    <aside className="grid content-start gap-3">
-      <label className="grid gap-2 text-sm">
+    <aside className="grid min-w-0 content-start gap-3">
+      <label className="grid min-w-0 gap-2 text-sm">
         <span className="font-medium">KPI a comparar</span>
         <select
-          className="h-10 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-10 w-full min-w-0 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
           onChange={(event) => setSelectedMetricLabel(event.target.value)}
           value={selectedMetricLabel}
         >
@@ -915,11 +915,11 @@ function PatientFlowRows({ metrics }: { metrics: PatientFlowMetric[] }) {
     <dl className="grid divide-y text-sm">
       {metrics.map((metric) => (
         <div
-          className="grid gap-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[1fr_140px_160px] sm:items-center"
+          className="grid min-w-0 gap-2 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_120px_150px] sm:items-center"
           key={`${metric.label}-${metric.value}`}
         >
-          <dt className="font-medium">{metric.label}</dt>
-          <dd className="font-semibold tracking-normal">{metric.value}</dd>
+          <dt className="min-w-0 font-medium">{metric.label}</dt>
+          <dd className="min-w-0 font-semibold tracking-normal">{metric.value}</dd>
           <dd className="grid gap-1">
             <Badge className={cn("w-fit", getStatusClass(metric.status))}>
               {getStatusLabel(metric.status)}
@@ -942,8 +942,8 @@ function PatientFlowBlockSection({
   context: StoredContext | null;
 }) {
   return (
-    <section className="grid gap-4 rounded-md border bg-card p-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="mb-4 grid gap-1">
+    <section className="grid min-w-0 gap-4 rounded-md border bg-card p-4 xl:grid-cols-[minmax(0,1fr)_440px]">
+      <div className="grid min-w-0 content-start gap-1">
         <div className="flex items-center gap-2 text-sm font-medium">
           <ClipboardList className="size-4 text-primary" />
           {block.title}
@@ -1078,7 +1078,7 @@ export function PatientFlowDemandDashboard() {
         </section>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4">
         {screen.blocks.map((block) => (
           <PatientFlowBlockSection
             block={block}

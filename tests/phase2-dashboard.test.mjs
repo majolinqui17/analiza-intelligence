@@ -571,6 +571,15 @@ for (const requiredPatientFlowUiText of [
   }
 }
 
+if (
+  patientFlowDashboardComponent.includes("grid gap-4 xl:grid-cols-2") &&
+  patientFlowDashboardComponent.includes("MetricTrendPanel")
+) {
+  throw new Error(
+    "Patient flow KPI trend panels must not be nested inside side-by-side block cards.",
+  );
+}
+
 for (const requiredPatientFlowDataText of [
   "Flujo de pacientes y demanda",
   "patientFlowTrendOptions",

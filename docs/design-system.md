@@ -53,6 +53,8 @@ Administrative forms that include wide tables, such as usuarios y permisos, shou
 
 Operational KPI groups should pair numeric lists with compact trend charts when the decision depends on time movement. The chart must show date labels, the current period, a comparison period, and point-level values through hover/title metadata.
 
+When KPI groups include an internal trend chart, stack each group full-width before placing the chart beside its KPI list. Do not place two charted KPI groups side by side and then add another internal side-by-side chart grid; that causes overlap on common desktop widths.
+
 ## Branding
 
 Do not invent the logo. Provide configurable slots for:
