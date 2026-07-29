@@ -51,6 +51,8 @@ Large line-of-business presentations should not become endless dashboard pages. 
 
 Administrative forms that include wide tables, such as usuarios y permisos, should stack the form above the table or use a full-width form grid. Do not place a narrow form beside a wide table when selectors contain long role, branch, area, or business-line names.
 
+Operational KPI groups should pair numeric lists with compact trend charts when the decision depends on time movement. The chart must show date labels, the current period, a comparison period, and point-level values through hover/title metadata.
+
 ## Branding
 
 Do not invent the logo. Provide configurable slots for:
