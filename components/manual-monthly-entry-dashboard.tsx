@@ -31,6 +31,13 @@ import {
   type ActiveBusinessLine,
   useActiveBusinessLine,
 } from "@/hooks/use-active-business-line";
+import {
+  demoBranches,
+  demoBusinessLineOptions,
+  demoCountryOptions,
+  regionalCountryId,
+  type BranchOption,
+} from "@/lib/tenant/demo-context";
 import { cn } from "@/lib/utils";
 
 const contextStorageKey = "analiza:selected-context";
@@ -38,7 +45,13 @@ const contextChangeEvent = "analiza:context-change";
 const manualHistoryStorageKey = "analiza:manual-monthly-history";
 
 type StoredContext = {
+  branchId?: string;
+  businessLineCode?: string;
+  businessLineId?: string;
+  businessLineName?: string;
+  companyId?: string;
   countryName?: string;
+  countryId?: string;
   companyName?: string;
   branchName?: string;
   managerName?: string;
@@ -225,6 +238,68 @@ function toImportBusinessLine(line: ActiveBusinessLine): ImportBusinessLine {
   return "Consolidado";
 }
 
+function getBusinessLineCompanyId(line: ImportBusinessLine) {
+  const lineCode: Record<ImportBusinessLine, string> = {
+    Consolidado: "CONSOLIDATED",
+    Fisioterapia: "PHYSIOTHERAPY",
+    Imagenes: "IMAGING",
+    Laboratorio: "LABORATORY",
+  };
+  const businessLine = demoBusinessLineOptions.find(
+    (option) => option.code === lineCode[line],
+  );
+
+  return businessLine?.companyId ?? null;
+}
+
+function getBranchCountryName(countryId: string) {
+  return (
+    demoCountryOptions.find((country) => country.id === countryId)?.name ??
+    "Pais pendiente"
+  );
+}
+
+function formatBranchOption(branch: BranchOption) {
+  return `${branch.name} · ${getBranchCountryName(branch.countryId)}`;
+}
+
+function getBranchOptionsForLine(
+  line: ImportBusinessLine,
+  context: StoredContext | null,
+) {
+  const companyId = getBusinessLineCompanyId(line);
+
+  if (!companyId) {
+    return [];
+  }
+
+  return demoBranches
+    .filter((branch) => branch.companyId === companyId)
+    .filter(
+      (branch) =>
+        !context?.countryId ||
+        context.countryId === regionalCountryId ||
+        branch.countryId === context.countryId,
+    )
+    .sort((left, right) =>
+      formatBranchOption(left).localeCompare(formatBranchOption(right)),
+    );
+}
+
+function resolveBranchName(
+  branchId: string | undefined,
+  branchOptions: BranchOption[],
+) {
+  if (!branchId) {
+    return "";
+  }
+
+  return (
+    branchOptions.find((branch) => branch.id === branchId)?.name ??
+    branchId
+  );
+}
+
 function normalizeMonthValue(context: StoredContext | null) {
   if (context?.periodStart && /^\d{4}-\d{2}/.test(context.periodStart)) {
     return context.periodStart.slice(0, 7);
@@ -240,6 +315,7 @@ function normalizeMonthValue(context: StoredContext | null) {
 function buildInitialFormValues(
   line: ImportBusinessLine,
   context: StoredContext | null,
+  branchOptions: BranchOption[],
 ) {
   const fields = getManualMonthlyFormStepsForLine(line).flatMap(
     (step) => step.fields,
@@ -250,10 +326,19 @@ function buildInitialFormValues(
   }, {});
 
   values.period = normalizeMonthValue(context);
-  values.branch_reported =
-    context?.branchName && !context.branchName.toLowerCase().includes("todas")
-      ? context.branchName
+  const contextBranchId =
+    context?.branchId && context.branchId !== "__all__"
+      ? context.branchId
       : "";
+  const branchByName = branchOptions.find(
+    (branch) => branch.name === context?.branchName,
+  );
+
+  values.branch_reported = branchOptions.some(
+    (branch) => branch.id === contextBranchId,
+  )
+    ? contextBranchId
+    : branchByName?.id ?? "";
   values.manager_name = context?.managerName ?? "";
   values.data_cutoff_date = context?.periodEnd ?? "2026-07-31";
   values.manager_attestation =
@@ -364,10 +449,12 @@ function fieldInputStep(field: ManualMonthlyFormField) {
 }
 
 function ManualField({
+  branchOptions,
   field,
   onChange,
   value,
 }: {
+  branchOptions: BranchOption[];
   field: ManualMonthlyFormField;
   onChange: (value: string) => void;
   value: string;
@@ -393,27 +480,42 @@ function ManualField({
         {field.description}
       </span>
       <span className="relative">
-        {isCurrency ? (
+        {field.id === "branch_reported" ? (
+          <select
+            className="h-11 w-full rounded-md border bg-background px-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+            onChange={(event) => onChange(event.target.value)}
+            value={value}
+          >
+            <option value="">Selecciona una sucursal</option>
+            {branchOptions.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {formatBranchOption(branch)}
+              </option>
+            ))}
+          </select>
+        ) : isCurrency ? (
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
             $
           </span>
         ) : null}
-        <Input
-          className={cn(
-            "h-11",
-            isCurrency && "pl-8",
-            isPercent && "pr-10",
-          )}
-          inputMode={isNumeric ? "decimal" : undefined}
-          max={field.max}
-          min={field.min}
-          onChange={handleChange}
-          placeholder={field.placeholder}
-          step={fieldInputStep(field)}
-          type={fieldInputType(field)}
-          value={value}
-        />
-        {isPercent ? (
+        {field.id !== "branch_reported" ? (
+          <Input
+            className={cn(
+              "h-11",
+              isCurrency && "pl-8",
+              isPercent && "pr-10",
+            )}
+            inputMode={isNumeric ? "decimal" : undefined}
+            max={field.max}
+            min={field.min}
+            onChange={handleChange}
+            placeholder={field.placeholder}
+            step={fieldInputStep(field)}
+            type={fieldInputType(field)}
+            value={value}
+          />
+        ) : null}
+        {isPercent && field.id !== "branch_reported" ? (
           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
             %
           </span>
@@ -497,15 +599,20 @@ export function ManualMonthlyEntryDashboard() {
     setLocalHistory(readLocalManualHistory());
   }, []);
 
-  useEffect(() => {
-    setFormValues(buildInitialFormValues(activeLine, context));
-    setActiveStepIndex(0);
-  }, [activeLine, context]);
-
   const formSteps = useMemo(
     () => getManualMonthlyFormStepsForLine(activeLine),
     [activeLine],
   );
+  const branchOptions = useMemo(
+    () => getBranchOptionsForLine(activeLine, context),
+    [activeLine, context],
+  );
+
+  useEffect(() => {
+    setFormValues(buildInitialFormValues(activeLine, context, branchOptions));
+    setActiveStepIndex(0);
+  }, [activeLine, branchOptions, context]);
+
   const allFields = useMemo(
     () => formSteps.flatMap((step) => step.fields),
     [formSteps],
@@ -574,7 +681,7 @@ export function ManualMonthlyEntryDashboard() {
 
     const period = formValues.period?.trim() || normalizeMonthValue(context);
     const branch =
-      formValues.branch_reported?.trim() ||
+      resolveBranchName(formValues.branch_reported, branchOptions) ||
       context?.branchName ||
       "Sucursal pendiente";
     const qualityScore = clampPercent(
@@ -774,6 +881,7 @@ export function ManualMonthlyEntryDashboard() {
             <div className="grid gap-3 lg:grid-cols-2">
               {currentStep?.fields.map((field) => (
                 <ManualField
+                  branchOptions={branchOptions}
                   field={field}
                   key={field.id}
                   onChange={(value) => updateField(field.id, value)}

@@ -43,6 +43,12 @@ assert(
   "Manual monthly dashboard must be driven by the selected business line.",
 );
 assert(
+  component.includes("demoBranches") &&
+    component.includes("getBranchOptionsForLine") &&
+    component.includes("Selecciona una sucursal"),
+  "Manual monthly dashboard must render branch_reported as a branch selector.",
+);
+assert(
   importDashboard.includes("ManualMonthlyEntryDashboard"),
   "Import operations must render the manual monthly dashboard.",
 );

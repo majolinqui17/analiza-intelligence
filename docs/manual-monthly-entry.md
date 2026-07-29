@@ -7,6 +7,7 @@ La via manual principal para actualizar Analiza Intelligence sera un formulario 
 ## Alcance
 
 - Cada gerente registra un cierre mensual por linea de negocio.
+- La sucursal reportada se elige desde el catalogo activo de sucursales; no se captura como texto libre.
 - El cierre captura contexto, resultados comerciales, operacion, citas, capacidad, costos, margen y calidad.
 - Cada registro conserva historial por linea, sucursal, periodo, fuente, estado y marca `DEMO`.
 - La vista consolidada solo muestra historial; no permite publicar cierres porque no se deben mezclar negocios distintos.
