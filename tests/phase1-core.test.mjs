@@ -54,17 +54,11 @@ for (const fn of requiredFunctions) {
 }
 
 const roleKeys = [
-  "super_admin",
-  "director_ejecutivo_grupo",
-  "director_pais",
-  "director_empresa",
-  "director_financiero",
-  "director_operaciones",
+  "webmaster_admin",
+  "ceo",
+  "gerente_operaciones",
+  "gerente_area",
   "gerente_sucursal",
-  "analista_bi",
-  "cargador_datos",
-  "auditor",
-  "viewer",
 ];
 
 for (const roleKey of roleKeys) {
@@ -89,11 +83,59 @@ for (const country of countries) {
   }
 }
 
-let signUpReferences = "";
+const signUpPage = readFileSync("app/auth/sign-up/page.tsx", "utf8");
+const loginForm = readFileSync("components/login-form.tsx", "utf8");
+const demoAdminRoute = readFileSync("app/auth/demo-admin/route.ts", "utf8");
+const demoAdminHelper = readFileSync("lib/auth/demo-admin.ts", "utf8");
+const removedSignUpFormExists = (() => {
+  try {
+    statSync("components/sign-up-form.tsx");
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
+if (!signUpPage.includes("Crear cuenta")) {
+  throw new Error("Controlled account creation page should say Crear cuenta.");
+}
+
+for (const requiredRoleText of [
+  "Webmaster / Administrador",
+  "CEO",
+  "Gerente de operaciones",
+  "Gerente de sucursal",
+]) {
+  if (!signUpPage.includes(requiredRoleText) && !seed.includes(requiredRoleText)) {
+    throw new Error(`Missing four-role model text: ${requiredRoleText}`);
+  }
+}
+
+if (!loginForm.includes("Crear cuenta")) {
+  throw new Error("Login form should link to controlled account creation.");
+}
+
+if (!loginForm.includes("Entrar al panel ejecutivo DEMO")) {
+  throw new Error("Login form should expose controlled DEMO admin access.");
+}
+
+if (!demoAdminRoute.includes("demoAdminCookieName")) {
+  throw new Error("DEMO admin route should set a local demo session cookie.");
+}
+
+if (!demoAdminHelper.includes("VERCEL_ENV !== \"production\"")) {
+  throw new Error("DEMO admin helper must disable demo access in production.");
+}
+
+if (removedSignUpFormExists) {
+  throw new Error("Public self-registration form must not exist.");
+}
+
+let signUpCalls = "";
 try {
-  signUpReferences = execFileSync(
+  signUpCalls = execFileSync(
     "rg",
-    ["sign-up|Sign up|signUp", "app", "components", "lib"],
+    ["auth.signUp", "app", "components", "lib"],
     { encoding: "utf8" },
   );
 } catch (error) {
@@ -107,8 +149,15 @@ try {
   }
 }
 
-if (signUpReferences.trim().length > 0) {
-  throw new Error(`Unexpected public sign-up reference:\n${signUpReferences}`);
+if (signUpCalls.trim().length > 0) {
+  throw new Error(`Unexpected public self-registration behavior:\n${signUpCalls}`);
+}
+
+if (
+  signUpPage.includes('type="password"') ||
+  signUpPage.includes('id="password"')
+) {
+  throw new Error("Controlled account creation page must not ask for a password.");
 }
 
 console.log("Phase 1 core checks passed.");

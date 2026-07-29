@@ -20,6 +20,8 @@ const importDashboard = readWorkspaceFile(
   "components/import-operations-dashboard.tsx",
 );
 const importOperations = readWorkspaceFile("lib/analytics/import-operations.ts");
+const managedBranches = readWorkspaceFile("lib/tenant/managed-branch-records.ts");
+const demoContext = readWorkspaceFile("lib/tenant/demo-context.ts");
 const modulePage = readWorkspaceFile("app/protected/[module]/page.tsx");
 const navigation = readWorkspaceFile("lib/navigation.ts");
 const packageJson = readWorkspaceFile("package.json");
@@ -45,8 +47,16 @@ assert(
 assert(
   component.includes("demoBranches") &&
     component.includes("getBranchOptionsForLine") &&
-    component.includes("Selecciona una sucursal"),
+    component.includes("Selecciona una sucursal") &&
+    component.includes("areaManagerName") &&
+    component.includes("branchManagerName"),
   "Manual monthly dashboard must render branch_reported as a branch selector.",
+);
+assert(
+  component.includes("getMonthlyLoadDeadline") &&
+    component.includes("edit_authorization_code") &&
+    component.includes("Ese cierre ya fue publicado"),
+  "Manual monthly dashboard must enforce deadline and edit authorization rules.",
 );
 assert(
   importDashboard.includes("ManualMonthlyEntryDashboard"),
@@ -79,6 +89,26 @@ for (const businessLine of ["Laboratorio", "Fisioterapia", "Imagenes"]) {
 assert(
   importOperations.includes("sourceTrace"),
   "Manual monthly history must preserve source traceability.",
+);
+assert(
+  importOperations.includes("area_manager_name") &&
+    importOperations.includes("load_deadline_date") &&
+    importOperations.includes("team_feedback_score"),
+  "Manual monthly form must include area manager, deadline, and 360 evaluation fields.",
+);
+assert(
+  demoContext.includes("gerente_area") &&
+    demoContext.includes("managedDemoBranches"),
+  "Demo context must expose area manager role and managed branch catalog.",
+);
+assert(
+  managedBranches.includes("managedBranchRecords") &&
+    managedBranches.includes("Ana Maria Rivera Monroy") &&
+    managedBranches.includes("Katherine Leonardo") &&
+    managedBranches.includes("LABORATORY") &&
+    managedBranches.includes("IMAGING") &&
+    managedBranches.includes("PHYSIOTHERAPY"),
+  "Managed branch catalog must preserve branches, branch managers, area managers, and lines from the workbook.",
 );
 assert(
   documentationExists,

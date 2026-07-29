@@ -141,12 +141,22 @@ export type ManualMonthlySubmissionStatus =
   | "Publicado DEMO"
   | "Bloqueado por calidad DEMO";
 
+export type ManualMonthlyDeadlineStatus =
+  | "A tiempo DEMO"
+  | "Tarde DEMO"
+  | "Pendiente DEMO";
+
 export type ManualMonthlyHistoryEntry = {
   id: string;
   businessLine: ImportBusinessLine;
   branch: string;
   period: string;
   manager: string;
+  branchManager?: string;
+  areaManager?: string;
+  deadlineDate?: string;
+  deadlineStatus?: ManualMonthlyDeadlineStatus;
+  punctualityScore?: number;
   netRevenue: number;
   revenueTarget: number;
   grossMarginRate: number;
@@ -1087,21 +1097,43 @@ export const manualMonthlyFormSteps: ManualMonthlyFormStep[] = [
       {
         id: "branch_reported",
         label: "Sucursal reportada",
-        description: "Sucursal que entrega el cierre mensual.",
+        description: "Sucursal del catalogo que entrega el cierre mensual.",
         inputType: "text",
         unit: "sucursal",
         required: true,
-        placeholder: "Aguilares",
+        placeholder: "Selecciona una sucursal",
         appliesTo: manualOperationalLines,
       },
       {
         id: "manager_name",
-        label: "Gerente responsable",
-        description: "Responsable interno que firma el cierre operativo.",
+        label: "Gerente de sucursal",
+        description:
+          "Se completa desde el catalogo al elegir sucursal; si falta, debe asignarse antes de publicar.",
         inputType: "text",
         unit: "responsable",
         required: true,
         placeholder: "Nombre del gerente",
+        appliesTo: manualOperationalLines,
+      },
+      {
+        id: "area_manager_name",
+        label: "Gerente de area",
+        description:
+          "Responsable de area que supervisa el grupo de sucursales.",
+        inputType: "text",
+        unit: "responsable",
+        required: true,
+        placeholder: "Nombre del gerente de area",
+        appliesTo: manualOperationalLines,
+      },
+      {
+        id: "area_zone",
+        label: "Zona / departamento",
+        description: "Zona, departamento o municipio usado para agrupar sucursales.",
+        inputType: "text",
+        unit: "zona",
+        required: true,
+        placeholder: "Centro",
         appliesTo: manualOperationalLines,
       },
       {
@@ -1112,6 +1144,17 @@ export const manualMonthlyFormSteps: ManualMonthlyFormStep[] = [
         unit: "fecha",
         required: true,
         placeholder: "2026-07-31",
+        appliesTo: manualOperationalLines,
+      },
+      {
+        id: "load_deadline_date",
+        label: "Fecha limite de carga",
+        description:
+          "El cierre mensual debe publicarse antes o el dia 5 del mes siguiente.",
+        inputType: "date",
+        unit: "fecha",
+        required: true,
+        placeholder: "2026-08-05",
         appliesTo: manualOperationalLines,
       },
     ],
@@ -1479,6 +1522,51 @@ export const manualMonthlyFormSteps: ManualMonthlyFormStep[] = [
     ],
   },
   {
+    id: "evaluacion-360",
+    title: "Evaluacion 360",
+    description:
+      "Captura senales cualitativas del equipo hacia la gestion del gerente, sin datos personales ni represalias.",
+    ownerNote:
+      "Debe usarse para coaching, disciplina operativa y lectura de liderazgo; no reemplaza el resultado financiero.",
+    fields: [
+      {
+        id: "team_feedback_score",
+        label: "Score 360 del equipo",
+        description:
+          "Promedio anonimo de confianza, claridad, seguimiento y apoyo del gerente.",
+        inputType: "percent",
+        unit: "%",
+        required: false,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+        max: 100,
+      },
+      {
+        id: "team_feedback_theme",
+        label: "Tema cualitativo principal",
+        description:
+          "Resumen anonimo del tema mas repetido por el equipo este mes.",
+        inputType: "text",
+        unit: "texto",
+        required: false,
+        placeholder: "Ej. comunicacion, seguimiento, carga de trabajo",
+        appliesTo: manualOperationalLines,
+      },
+      {
+        id: "team_feedback_action",
+        label: "Accion de seguimiento",
+        description:
+          "Accion acordada para mejorar gestion sin exponer a colaboradores.",
+        inputType: "text",
+        unit: "texto",
+        required: false,
+        placeholder: "Ej. reunion semanal de bloqueo operativo",
+        appliesTo: manualOperationalLines,
+      },
+    ],
+  },
+  {
     id: "calidad-validacion",
     title: "Calidad y validacion",
     description:
@@ -1509,6 +1597,17 @@ export const manualMonthlyFormSteps: ManualMonthlyFormStep[] = [
         min: 0,
       },
       {
+        id: "late_reason",
+        label: "Motivo si carga fuera de fecha",
+        description:
+          "Explicacion corta cuando se publica despues del deadline del dia 5.",
+        inputType: "text",
+        unit: "texto",
+        required: false,
+        placeholder: "No aplica",
+        appliesTo: manualOperationalLines,
+      },
+      {
         id: "data_quality_score",
         label: "Score de calidad",
         description: "Calificacion interna de completitud, coherencia y trazabilidad.",
@@ -1519,6 +1618,17 @@ export const manualMonthlyFormSteps: ManualMonthlyFormStep[] = [
         appliesTo: manualOperationalLines,
         min: 0,
         max: 100,
+      },
+      {
+        id: "edit_authorization_code",
+        label: "Autorizacion para editar",
+        description:
+          "Solo se llena si el periodo ya fue publicado y un administrador autorizo reemplazarlo.",
+        inputType: "text",
+        unit: "codigo",
+        required: false,
+        placeholder: "Codigo DEMO de autorizacion",
+        appliesTo: manualOperationalLines,
       },
       {
         id: "manager_attestation",

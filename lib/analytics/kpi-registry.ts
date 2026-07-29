@@ -71,6 +71,7 @@ const executiveRoles: RoleKey[] = [
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
+  "gerente_area",
   "gerente_sucursal",
 ];
 
@@ -78,6 +79,7 @@ const operatorRoles: RoleKey[] = [
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
+  "gerente_area",
 ];
 
 export const kpiRegistry: KpiRegistryItem[] = [

@@ -4,21 +4,17 @@
 
 Supabase Auth is the authentication provider. The app supports login, password recovery, logout, secure sessions, and protected routes. Public self-registration must be disabled from the product flow.
 
+Local DEMO administrator access is available for exploration before real users are provisioned. It uses an HTTP-only cookie, is labeled DEMO, is disabled in Vercel production, and can be disabled locally with `ANALIZA_DISABLE_DEMO_ADMIN=true`.
+
 ## Roles
 
-Initial roles:
+Official Analiza roles:
 
-- `super_admin`
-- `director_ejecutivo_grupo`
-- `director_pais`
-- `director_empresa`
-- `director_financiero`
-- `director_operaciones`
-- `gerente_sucursal`
-- `analista_bi`
-- `cargador_datos`
-- `auditor`
-- `viewer`
+- `webmaster_admin`: webmaster or administrator. Designs dashboards, configures modules, creates users, assigns roles, and manages system settings.
+- `ceo`: reads the executive BI view for Analiza and all assigned business lines, countries, and branches.
+- `gerente_operaciones`: manages one business line, loads branch templates, validates data, and monitors operational results.
+- `gerente_area`: supervises a group of assigned branches, validates monthly discipline, and compares branch manager performance.
+- `gerente_sucursal`: registers the assigned branch monthly close through the controlled form and reads branch results.
 
 ## Authorization
 
@@ -44,7 +40,11 @@ Phase 1 adds RLS helper functions:
 
 These functions are used by policies on the initial tenant, catalog, assignment, data source, and audit tables.
 
+`current_user_is_super_admin` is retained as a compatibility helper name, but it now maps to the product role `webmaster_admin`.
+
 Phase 3 extends RLS to appointments, capacity, professionals, anonymous patients, and service events. Operational reads are scoped through `current_user_can_access_branch`.
+
+Write access to operational data is limited to `webmaster_admin`, `gerente_operaciones`, `gerente_area`, and the controlled monthly form path for `gerente_sucursal`. Published closes require authorization before replacement.
 
 ## Secret Handling
 

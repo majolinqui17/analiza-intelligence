@@ -1,5 +1,9 @@
 import { elSalvadorBranchResultTemplates } from "@/lib/analytics/el-salvador-result-templates";
 import type { BusinessLineCode } from "@/lib/analytics/kpi-registry";
+import {
+  managedBranchRecords,
+  type ManagedBranchRecord,
+} from "@/lib/tenant/managed-branch-records";
 
 export type CountryOption = {
   id: string;
@@ -38,6 +42,12 @@ export type BranchOption = {
   code: string;
   name: string;
   city: string;
+  businessLineCode?: BusinessLineCode;
+  branchManagerName?: string;
+  areaManagerName?: string;
+  areaZone?: string;
+  isActive?: boolean;
+  sourceTrace?: string;
   isDemo: true;
 };
 
@@ -45,6 +55,7 @@ export type RoleKey =
   | "webmaster_admin"
   | "ceo"
   | "gerente_operaciones"
+  | "gerente_area"
   | "gerente_sucursal";
 
 export const demoCountries: CountryOption[] = [
@@ -276,21 +287,61 @@ export const elSalvadorResultBranches: BranchOption[] =
     isDemo: true,
   }));
 
+function getCountryIdForManagedBranch(countryIso2: ManagedBranchRecord["countryIso2"]) {
+  return (
+    demoCountries.find((country) => country.iso2 === countryIso2)?.id ??
+    regionalCountryId
+  );
+}
+
+function getCompanyIdForManagedBranch(
+  businessLineCode: ManagedBranchRecord["businessLineCode"],
+) {
+  const businessLine = demoBusinessLineOptions.find(
+    (line) => line.code === businessLineCode,
+  );
+
+  return businessLine?.companyId ?? consolidatedCompanyId;
+}
+
+function cleanOptionalManagerName(managerName: string) {
+  return managerName.toLowerCase() === "no hay" ? undefined : managerName;
+}
+
+export const managedDemoBranches: BranchOption[] = managedBranchRecords.map(
+  (branch) => ({
+    id: branch.id,
+    countryId: getCountryIdForManagedBranch(branch.countryIso2),
+    companyId: getCompanyIdForManagedBranch(branch.businessLineCode),
+    code: branch.id.replace("managed-", "").toUpperCase(),
+    name: branch.branchName,
+    city: branch.areaZone,
+    businessLineCode: branch.businessLineCode,
+    branchManagerName: cleanOptionalManagerName(branch.branchManagerName),
+    areaManagerName: branch.areaManagerName,
+    areaZone: branch.areaZone,
+    isActive: branch.isActive,
+    sourceTrace: branch.sourceTrace,
+    isDemo: true,
+  }),
+);
+
+const managedCompanyIds = new Set(
+  managedDemoBranches.map((branch) => branch.companyId),
+);
+
 export const demoBranches: BranchOption[] = [
-  ...generatedDemoBranches.filter(
-    (branch) =>
-      !(
-        branch.countryId === elSalvadorCountryId &&
-        branch.companyId === laboratorioCompanyId
-      ),
+  ...[...generatedDemoBranches, ...elSalvadorResultBranches].filter(
+    (branch) => !managedCompanyIds.has(branch.companyId),
   ),
-  ...elSalvadorResultBranches,
+  ...managedDemoBranches,
 ];
 
 export const roleKeys: RoleKey[] = [
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
+  "gerente_area",
   "gerente_sucursal",
 ];
 
@@ -317,14 +368,20 @@ export const demoRoleProfiles: Record<
   gerente_operaciones: {
     label: "Gerente de operaciones",
     description:
-      "Gestiona una linea de negocio y carga plantillas de sucursales.",
-    accessSummary: "Carga plantillas y revisa operacion de su linea.",
+      "Gestiona una linea de negocio y valida cierres mensuales de sucursales.",
+    accessSummary: "Gestiona formularios y revisa operacion de su linea.",
+  },
+  gerente_area: {
+    label: "Gerente de area",
+    description:
+      "Supervisa un grupo de sucursales asignadas y valida disciplina de carga.",
+    accessSummary: "Lee y compara sucursales asignadas por gerente de area.",
   },
   gerente_sucursal: {
     label: "Gerente de sucursal",
     description:
-      "Consulta resultados de su sucursal para exponerlos al CEO.",
-    accessSummary: "Solo lectura de resultados de plantillas asignadas.",
+      "Registra y consulta el cierre mensual de su sucursal asignada.",
+    accessSummary: "Formulario mensual y lectura de su sucursal.",
   },
 };
 

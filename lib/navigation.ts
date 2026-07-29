@@ -35,6 +35,7 @@ const allRoles: RoleKey[] = [
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
+  "gerente_area",
   "gerente_sucursal",
 ];
 
@@ -44,6 +45,7 @@ const operationsRoles: RoleKey[] = [
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
+  "gerente_area",
   "gerente_sucursal",
 ];
 
@@ -51,6 +53,7 @@ const businessLineRoles: RoleKey[] = [
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
+  "gerente_area",
   "gerente_sucursal",
 ];
 
@@ -60,6 +63,7 @@ const dataReadRoles: RoleKey[] = [
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
+  "gerente_area",
   "gerente_sucursal",
 ];
 

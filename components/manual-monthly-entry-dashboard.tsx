@@ -4,6 +4,7 @@ import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  CalendarClock,
   CheckCircle2,
   ClipboardList,
   DatabaseZap,
@@ -12,6 +13,7 @@ import {
   Save,
   ShieldCheck,
   Sparkles,
+  UsersRound,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +25,7 @@ import {
   getManualMonthlyHistoryForLine,
   importBusinessLines,
   type ImportBusinessLine,
+  type ManualMonthlyDeadlineStatus,
   type ManualMonthlyFormField,
   type ManualMonthlyHistoryEntry,
   type ManualMonthlySubmissionStatus,
@@ -260,7 +263,10 @@ function getBranchCountryName(countryId: string) {
 }
 
 function formatBranchOption(branch: BranchOption) {
-  return `${branch.name} · ${getBranchCountryName(branch.countryId)}`;
+  const branchManager = branch.branchManagerName ?? "Sin gerente asignado";
+  const areaManager = branch.areaManagerName ?? "Area pendiente";
+
+  return `${branch.name} · ${branchManager} · Area: ${areaManager} · ${getBranchCountryName(branch.countryId)}`;
 }
 
 function getBranchOptionsForLine(
@@ -298,6 +304,76 @@ function resolveBranchName(
     branchOptions.find((branch) => branch.id === branchId)?.name ??
     branchId
   );
+}
+
+function findSelectedBranch(
+  branchId: string | undefined,
+  branchOptions: BranchOption[],
+) {
+  if (!branchId) {
+    return null;
+  }
+
+  return branchOptions.find((branch) => branch.id === branchId) ?? null;
+}
+
+function getMonthEndDate(period: string) {
+  if (!/^\d{4}-\d{2}$/.test(period)) {
+    return "2026-07-31";
+  }
+
+  const [yearValue, monthValue] = period.split("-").map(Number);
+  const monthEndDate = new Date(Date.UTC(yearValue, monthValue, 0));
+
+  return monthEndDate.toISOString().slice(0, 10);
+}
+
+function getMonthlyLoadDeadline(period: string) {
+  if (!/^\d{4}-\d{2}$/.test(period)) {
+    return "2026-08-05";
+  }
+
+  const [yearValue, monthValue] = period.split("-").map(Number);
+  const deadlineDate = new Date(Date.UTC(yearValue, monthValue, 5));
+
+  return deadlineDate.toISOString().slice(0, 10);
+}
+
+function getDeadlineStatus(
+  period: string,
+  createdAt: string,
+): ManualMonthlyDeadlineStatus {
+  if (!/^\d{4}-\d{2}$/.test(period)) {
+    return "Pendiente DEMO";
+  }
+
+  return createdAt <= getMonthlyLoadDeadline(period)
+    ? "A tiempo DEMO"
+    : "Tarde DEMO";
+}
+
+function getPunctualityScore(status: ManualMonthlyDeadlineStatus) {
+  if (status === "A tiempo DEMO") {
+    return 100;
+  }
+
+  if (status === "Tarde DEMO") {
+    return 70;
+  }
+
+  return 0;
+}
+
+function applyBranchMetadata(
+  values: Record<string, string>,
+  branch: BranchOption | null,
+) {
+  return {
+    ...values,
+    area_manager_name: branch?.areaManagerName ?? values.area_manager_name ?? "",
+    area_zone: branch?.areaZone ?? values.area_zone ?? "",
+    manager_name: branch?.branchManagerName ?? values.manager_name ?? "",
+  };
 }
 
 function normalizeMonthValue(context: StoredContext | null) {
@@ -339,12 +415,18 @@ function buildInitialFormValues(
   )
     ? contextBranchId
     : branchByName?.id ?? "";
-  values.manager_name = context?.managerName ?? "";
-  values.data_cutoff_date = context?.periodEnd ?? "2026-07-31";
+  values.data_cutoff_date = context?.periodEnd ?? getMonthEndDate(values.period);
+  values.load_deadline_date = getMonthlyLoadDeadline(values.period);
   values.manager_attestation =
     "Confirmo cierre mensual anonimo, conciliado y sin datos personales visibles.";
 
-  return values;
+  return applyBranchMetadata(
+    {
+      ...values,
+      manager_name: context?.managerName ?? values.manager_name,
+    },
+    findSelectedBranch(values.branch_reported, branchOptions),
+  );
 }
 
 function numberFromValue(value: string | undefined) {
@@ -452,11 +534,13 @@ function ManualField({
   branchOptions,
   field,
   onChange,
+  readOnly,
   value,
 }: {
   branchOptions: BranchOption[];
   field: ManualMonthlyFormField;
   onChange: (value: string) => void;
+  readOnly?: boolean;
   value: string;
 }) {
   const isCurrency = field.inputType === "currency";
@@ -504,12 +588,14 @@ function ManualField({
               "h-11",
               isCurrency && "pl-8",
               isPercent && "pr-10",
+              readOnly && "bg-muted text-muted-foreground",
             )}
             inputMode={isNumeric ? "decimal" : undefined}
             max={field.max}
             min={field.min}
             onChange={handleChange}
             placeholder={field.placeholder}
+            readOnly={readOnly}
             step={fieldInputStep(field)}
             type={fieldInputType(field)}
             value={value}
@@ -531,16 +617,18 @@ function ManualField({
 function HistoryTable({ entries }: { entries: ManualMonthlyHistoryEntry[] }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[820px] text-left text-sm">
+      <table className="w-full min-w-[1040px] text-left text-sm">
         <thead className="text-xs text-muted-foreground">
           <tr className="border-b">
             <th className="py-2 pr-4 font-medium">Periodo</th>
             <th className="py-2 pr-4 font-medium">Linea</th>
             <th className="py-2 pr-4 font-medium">Sucursal</th>
+            <th className="py-2 pr-4 font-medium">Gerente de area</th>
             <th className="py-2 pr-4 font-medium">Ingreso neto</th>
             <th className="py-2 pr-4 font-medium">Margen</th>
             <th className="py-2 pr-4 font-medium">Ocupacion</th>
             <th className="py-2 pr-4 font-medium">Calidad</th>
+            <th className="py-2 pr-4 font-medium">Puntualidad</th>
             <th className="py-2 pr-4 font-medium">Estado</th>
           </tr>
         </thead>
@@ -550,12 +638,18 @@ function HistoryTable({ entries }: { entries: ManualMonthlyHistoryEntry[] }) {
               <td className="py-3 pr-4 font-medium">{entry.period}</td>
               <td className="py-3 pr-4">{entry.businessLine}</td>
               <td className="py-3 pr-4">{entry.branch}</td>
+              <td className="py-3 pr-4">{entry.areaManager ?? "Pendiente"}</td>
               <td className="py-3 pr-4">{formatCurrency(entry.netRevenue)}</td>
               <td className="py-3 pr-4">{formatPercent(entry.grossMarginRate)}</td>
               <td className="py-3 pr-4">
                 {formatPercent(entry.effectiveOccupancyRate)}
               </td>
               <td className="py-3 pr-4">{formatPercent(entry.dataQualityScore)}</td>
+              <td className="py-3 pr-4">
+                <Badge variant="outline">
+                  {entry.deadlineStatus ?? "Pendiente DEMO"}
+                </Badge>
+              </td>
               <td className="py-3 pr-4">
                 <Badge className={statusClass(entry.status)}>{entry.status}</Badge>
               </td>
@@ -576,6 +670,7 @@ export function ManualMonthlyEntryDashboard() {
   const [localHistory, setLocalHistory] = useState<LocalManualMonthlySubmission[]>(
     [],
   );
+  const [todayIsoDate, setTodayIsoDate] = useState("2026-07-29");
   const [notice, setNotice] = useState(
     "El formulario mensual sera la via manual principal mientras no haya conectores.",
   );
@@ -599,6 +694,10 @@ export function ManualMonthlyEntryDashboard() {
     setLocalHistory(readLocalManualHistory());
   }, []);
 
+  useEffect(() => {
+    setTodayIsoDate(new Date().toISOString().slice(0, 10));
+  }, []);
+
   const formSteps = useMemo(
     () => getManualMonthlyFormStepsForLine(activeLine),
     [activeLine],
@@ -607,6 +706,19 @@ export function ManualMonthlyEntryDashboard() {
     () => getBranchOptionsForLine(activeLine, context),
     [activeLine, context],
   );
+  const selectedBranch = useMemo(
+    () => findSelectedBranch(formValues.branch_reported, branchOptions),
+    [branchOptions, formValues.branch_reported],
+  );
+  const branchGroupCount = useMemo(() => {
+    if (!selectedBranch?.areaManagerName) {
+      return 0;
+    }
+
+    return branchOptions.filter(
+      (branch) => branch.areaManagerName === selectedBranch.areaManagerName,
+    ).length;
+  }, [branchOptions, selectedBranch?.areaManagerName]);
 
   useEffect(() => {
     setFormValues(buildInitialFormValues(activeLine, context, branchOptions));
@@ -659,12 +771,39 @@ export function ManualMonthlyEntryDashboard() {
     [historyEntries],
   );
   const tone = businessLineTone[activeLine];
+  const deadlineDate =
+    formValues.load_deadline_date || getMonthlyLoadDeadline(formValues.period ?? "");
+  const currentDeadlineStatus = getDeadlineStatus(
+    formValues.period ?? "",
+    todayIsoDate,
+  );
 
   function updateField(fieldId: string, value: string) {
-    setFormValues((currentValue) => ({
-      ...currentValue,
-      [fieldId]: value,
-    }));
+    setFormValues((currentValue) => {
+      if (fieldId === "branch_reported") {
+        return applyBranchMetadata(
+          {
+            ...currentValue,
+            branch_reported: value,
+          },
+          findSelectedBranch(value, branchOptions),
+        );
+      }
+
+      if (fieldId === "period") {
+        return {
+          ...currentValue,
+          data_cutoff_date: getMonthEndDate(value),
+          load_deadline_date: getMonthlyLoadDeadline(value),
+          period: value,
+        };
+      }
+
+      return {
+        ...currentValue,
+        [fieldId]: value,
+      };
+    });
   }
 
   function persistHistory(entries: LocalManualMonthlySubmission[]) {
@@ -684,6 +823,8 @@ export function ManualMonthlyEntryDashboard() {
       resolveBranchName(formValues.branch_reported, branchOptions) ||
       context?.branchName ||
       "Sucursal pendiente";
+    const createdAt = todayIsoDate;
+    const deadlineStatus = getDeadlineStatus(period, createdAt);
     const qualityScore = clampPercent(
       numberFromValue(formValues.data_quality_score) ||
         (requiredMissing.length > 0 ? 65 : 86),
@@ -696,10 +837,14 @@ export function ManualMonthlyEntryDashboard() {
     return {
       answers: formValues,
       activityVolume: resolveActivityVolume(activeLine, formValues),
+      areaManager: formValues.area_manager_name?.trim() || "Gerente de area pendiente",
       branch,
+      branchManager: formValues.manager_name?.trim() || "Gerente pendiente",
       businessLine: activeLine,
-      createdAt: new Date().toISOString().slice(0, 10),
+      createdAt,
       dataQualityScore: qualityScore,
+      deadlineDate: getMonthlyLoadDeadline(period),
+      deadlineStatus,
       demoFlag: true,
       effectiveOccupancyRate: clampPercent(
         numberFromValue(formValues.effective_occupancy_rate),
@@ -709,8 +854,9 @@ export function ManualMonthlyEntryDashboard() {
       manager: formValues.manager_name?.trim() || "Gerente pendiente",
       netRevenue: numberFromValue(formValues.net_revenue),
       period,
+      punctualityScore: getPunctualityScore(deadlineStatus),
       revenueTarget: numberFromValue(formValues.revenue_target),
-      sourceTrace: `DEMO formulario mensual ${activeLine} ${period}`,
+      sourceTrace: `DEMO formulario mensual ${activeLine} ${period} / ${selectedBranch?.sourceTrace ?? "catalogo demo"}`,
       status: submissionStatus,
     };
   }
@@ -735,6 +881,19 @@ export function ManualMonthlyEntryDashboard() {
     }
 
     const submissionKey = `${submission.businessLine}|${submission.branch}|${submission.period}`;
+    const alreadyPublished = historyEntries.some(
+      (entry) =>
+        `${entry.businessLine}|${entry.branch}|${entry.period}` ===
+          submissionKey && entry.status === "Publicado DEMO",
+    );
+
+    if (alreadyPublished && !formValues.edit_authorization_code?.trim()) {
+      setNotice(
+        "Ese cierre ya fue publicado. Para reemplazarlo necesitas autorizacion del administrador.",
+      );
+      return;
+    }
+
     const nextHistory = [
       submission,
       ...localHistory.filter(
@@ -745,7 +904,7 @@ export function ManualMonthlyEntryDashboard() {
     ];
     persistHistory(nextHistory);
     setNotice(
-      `${submission.status} guardado para ${submission.businessLine}, ${submission.branch}, ${submission.period}.`,
+      `${submission.status} guardado para ${submission.businessLine}, ${submission.branch}, ${submission.period}. Puntualidad: ${submission.deadlineStatus}.`,
     );
   }
 
@@ -831,6 +990,55 @@ export function ManualMonthlyEntryDashboard() {
         />
       </div>
 
+      <div className="grid gap-3 lg:grid-cols-3">
+        <article className="grid gap-2 rounded-md border bg-background p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <UsersRound className="size-4 text-primary" />
+            Jerarquia de gerencia
+          </div>
+          <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
+            <span>
+              Sucursal: {selectedBranch?.name ?? "Seleccion pendiente"}
+            </span>
+            <span>
+              Gerente sucursal:{" "}
+              {selectedBranch?.branchManagerName ?? "Pendiente de asignar"}
+            </span>
+            <span>
+              Gerente de area:{" "}
+              {selectedBranch?.areaManagerName ?? "Pendiente de asignar"}
+            </span>
+          </div>
+        </article>
+        <article className="grid gap-2 rounded-md border bg-background p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <CalendarClock className="size-4 text-primary" />
+            Fecha limite
+          </div>
+          <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
+            <span>Deadline: {deadlineDate}</span>
+            <span>Estado: {currentDeadlineStatus}</span>
+            <span>
+              Penalizacion demo:{" "}
+              {currentDeadlineStatus === "Tarde DEMO"
+                ? "impacta score y bono"
+                : "sin penalizacion"}
+            </span>
+          </div>
+        </article>
+        <article className="grid gap-2 rounded-md border bg-background p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <ShieldCheck className="size-4 text-primary" />
+            Grupo de area
+          </div>
+          <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
+            <span>{branchGroupCount || 0} sucursales bajo esta gerencia.</span>
+            <span>Zona: {selectedBranch?.areaZone ?? "Pendiente"}</span>
+            <span>Fuente: {selectedBranch?.sourceTrace ?? "Catalogo DEMO"}</span>
+          </div>
+        </article>
+      </div>
+
       {!canUseManualForm ? (
         <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
           Selecciona una linea de negocio arriba para registrar un cierre
@@ -885,6 +1093,13 @@ export function ManualMonthlyEntryDashboard() {
                   field={field}
                   key={field.id}
                   onChange={(value) => updateField(field.id, value)}
+                  readOnly={
+                    ["area_manager_name", "area_zone", "load_deadline_date"].includes(
+                      field.id,
+                    ) ||
+                    (field.id === "manager_name" &&
+                      Boolean(selectedBranch?.branchManagerName))
+                  }
                   value={formValues[field.id] ?? ""}
                 />
               ))}
@@ -895,7 +1110,8 @@ export function ManualMonthlyEntryDashboard() {
                 <span>{notice}</span>
                 <span>
                   Pais: {context?.countryName ?? "El Salvador"} · Sucursal:{" "}
-                  {formValues.branch_reported || "pendiente"}
+                  {selectedBranch?.name ?? "pendiente"} · Area:{" "}
+                  {selectedBranch?.areaManagerName ?? "pendiente"}
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -945,8 +1161,10 @@ export function ManualMonthlyEntryDashboard() {
               <div className="grid gap-2 text-xs leading-5 text-muted-foreground">
                 <span>Datos personales no entran a dashboards.</span>
                 <span>Un cierre publicado conserva fuente, periodo y usuario.</span>
+                <span>La carga despues del dia 5 reduce puntualidad y bono.</span>
+                <span>Editar un cierre publicado requiere autorizacion.</span>
                 <span>AnaliA marca alerta si calidad baja de 70%.</span>
-                <span>Los conectores reemplazan el formulario solo cuando validan igual o mejor.</span>
+                <span>La evaluacion 360 es anonima y se usa para coaching.</span>
               </div>
             </div>
 

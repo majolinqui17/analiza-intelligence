@@ -68,19 +68,27 @@ on conflict (organization_id, country_id, company_id, code) do update set
   time_zone = excluded.time_zone,
   is_demo = excluded.is_demo;
 
+delete from public.roles
+where key in (
+  'super_admin',
+  'director_ejecutivo_grupo',
+  'director_pais',
+  'director_empresa',
+  'director_financiero',
+  'director_operaciones',
+  'analista_bi',
+  'cargador_datos',
+  'auditor',
+  'viewer'
+);
+
 insert into public.roles (id, key, name, description)
 values
-  ('60000000-0000-4000-8000-000000000001', 'super_admin', 'Super Admin', 'Acceso completo a configuracion y datos autorizados.'),
-  ('60000000-0000-4000-8000-000000000002', 'director_ejecutivo_grupo', 'Director ejecutivo del grupo', 'Vista consolidada regional.'),
-  ('60000000-0000-4000-8000-000000000003', 'director_pais', 'Director pais', 'Acceso a empresas y sucursales asignadas en un pais.'),
-  ('60000000-0000-4000-8000-000000000004', 'director_empresa', 'Director empresa', 'Acceso a una empresa en paises asignados.'),
-  ('60000000-0000-4000-8000-000000000005', 'director_financiero', 'Director financiero', 'Acceso financiero segun asignaciones.'),
-  ('60000000-0000-4000-8000-000000000006', 'director_operaciones', 'Director operaciones', 'Acceso operativo segun asignaciones.'),
-  ('60000000-0000-4000-8000-000000000007', 'gerente_sucursal', 'Gerente sucursal', 'Acceso a su sucursal asignada.'),
-  ('60000000-0000-4000-8000-000000000008', 'analista_bi', 'Analista BI', 'Acceso analitico e importaciones segun asignaciones.'),
-  ('60000000-0000-4000-8000-000000000009', 'cargador_datos', 'Cargador de datos', 'Carga y correccion de archivos.'),
-  ('60000000-0000-4000-8000-000000000010', 'auditor', 'Auditor', 'Lectura, trazabilidad y auditoria.'),
-  ('60000000-0000-4000-8000-000000000011', 'viewer', 'Viewer', 'Lectura limitada segun asignaciones.')
+  ('60000000-0000-4000-8000-000000000001', 'webmaster_admin', 'Webmaster / Administrador', 'Disena dashboards, configura modulos, crea usuarios y asigna roles.'),
+  ('60000000-0000-4000-8000-000000000002', 'ceo', 'CEO', 'Consulta la salud ejecutiva de Analiza y sus lineas de negocio.'),
+  ('60000000-0000-4000-8000-000000000003', 'gerente_operaciones', 'Gerente de operaciones', 'Gestiona una linea de negocio y carga plantillas de sucursales.'),
+  ('60000000-0000-4000-8000-000000000004', 'gerente_sucursal', 'Gerente de sucursal', 'Registra y consulta resultados de su sucursal asignada.'),
+  ('60000000-0000-4000-8000-000000000005', 'gerente_area', 'Gerente de area', 'Supervisa un grupo de sucursales asignadas y valida disciplina de carga.')
 on conflict (key) do update set
   name = excluded.name,
   description = excluded.description;
@@ -91,7 +99,9 @@ values
   ('70000000-0000-4000-8000-000000000002', 'config.manage', 'Gestionar configuracion', 'Administrar paises, empresas, sucursales y roles.'),
   ('70000000-0000-4000-8000-000000000003', 'imports.manage', 'Gestionar importaciones', 'Cargar, validar y corregir archivos.'),
   ('70000000-0000-4000-8000-000000000004', 'audit.read', 'Leer auditoria', 'Consultar trazabilidad e historial.'),
-  ('70000000-0000-4000-8000-000000000005', 'dashboards.read', 'Leer dashboards', 'Consultar indicadores autorizados.')
+  ('70000000-0000-4000-8000-000000000005', 'dashboards.read', 'Leer dashboards', 'Consultar indicadores autorizados.'),
+  ('70000000-0000-4000-8000-000000000006', 'dashboards.manage', 'Gestionar dashboards', 'Disenar y publicar dashboards del sistema.'),
+  ('70000000-0000-4000-8000-000000000007', 'users.manage', 'Gestionar usuarios', 'Crear usuarios y asignar roles y alcances.')
 on conflict (key) do update set
   name = excluded.name,
   description = excluded.description;
@@ -100,21 +110,35 @@ insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
 from public.roles r
 cross join public.permissions p
-where r.key = 'super_admin'
+where r.key = 'webmaster_admin'
 on conflict do nothing;
 
 insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
 from public.roles r
 join public.permissions p on p.key in ('context.read', 'dashboards.read', 'audit.read')
-where r.key in ('director_ejecutivo_grupo', 'director_pais', 'director_empresa', 'director_financiero', 'director_operaciones', 'analista_bi', 'auditor', 'viewer')
+where r.key = 'ceo'
 on conflict do nothing;
 
 insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
 from public.roles r
-join public.permissions p on p.key in ('context.read', 'imports.manage')
-where r.key = 'cargador_datos'
+join public.permissions p on p.key in ('context.read', 'dashboards.read', 'imports.manage')
+where r.key = 'gerente_operaciones'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.key in ('context.read', 'dashboards.read', 'imports.manage')
+where r.key = 'gerente_area'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.key in ('context.read', 'dashboards.read', 'imports.manage')
+where r.key = 'gerente_sucursal'
 on conflict do nothing;
 
 insert into public.branch_managers (id, organization_id, branch_id, display_name, email, is_demo, starts_on)
