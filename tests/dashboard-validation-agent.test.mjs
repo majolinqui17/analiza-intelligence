@@ -45,6 +45,10 @@ for (const requiredModelText of [
   "AnaliaScreenChatResponse",
   "createAnaliaScreenChatResponse",
   "comparacion",
+  "sistema",
+  "asksAboutAnaliaBehavior",
+  "Por que AnaliA no respondio bien",
+  "contestaba lo que no preguntaste",
   "detectChatIntent",
   "getScreenSignals",
   "compactChatBullets",
@@ -115,6 +119,7 @@ for (const requiredApiRouteText of [
   "createAnaliaScreenChatResponse",
   "extractOpenAIResponseText",
   "Devuelve SOLO JSON valido",
+  "intent debe ser uno de: resumen, critico, lectura, accion, comparacion, sistema",
 ]) {
   if (!apiRoute.includes(requiredApiRouteText)) {
     throw new Error(`AnaliA API route is missing: ${requiredApiRouteText}`);

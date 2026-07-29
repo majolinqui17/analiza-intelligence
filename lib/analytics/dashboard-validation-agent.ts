@@ -36,7 +36,8 @@ export type AnaliaScreenChatIntent =
   | "critico"
   | "lectura"
   | "accion"
-  | "comparacion";
+  | "comparacion"
+  | "sistema";
 
 export type AnaliaScreenChatResponse = {
   intent: AnaliaScreenChatIntent;
@@ -538,6 +539,26 @@ function getBusinessLineComparisonSummary(businessLine: string) {
     : getConsolidatedComparisonSummary();
 }
 
+function asksAboutAnaliaBehavior(normalizedQuestion: string) {
+  return (
+    normalizedQuestion.includes("por que contestas") ||
+    normalizedQuestion.includes("porque contestas") ||
+    normalizedQuestion.includes("por que respondes") ||
+    normalizedQuestion.includes("porque respondes") ||
+    normalizedQuestion.includes("no pregunte") ||
+    normalizedQuestion.includes("no pregunto") ||
+    normalizedQuestion.includes("no preguntaba") ||
+    normalizedQuestion.includes("no contestas") ||
+    normalizedQuestion.includes("no respondes") ||
+    normalizedQuestion.includes("puedes hablar") ||
+    normalizedQuestion.includes("no se puede hablar") ||
+    normalizedQuestion.includes("ia real") ||
+    normalizedQuestion.includes("modo demo") ||
+    normalizedQuestion.includes("openai_api_key") ||
+    normalizedQuestion.includes("no funciona bien")
+  );
+}
+
 function detectChatIntent(question: string): AnaliaScreenChatIntent {
   const normalizedQuestion = normalizeText(question);
   const asksComparison =
@@ -551,6 +572,10 @@ function detectChatIntent(question: string): AnaliaScreenChatIntent {
       (normalizedQuestion.includes("hubo") ||
         normalizedQuestion.includes("contra") ||
         normalizedQuestion.includes("pasado")));
+
+  if (asksAboutAnaliaBehavior(normalizedQuestion)) {
+    return "sistema";
+  }
 
   if (asksComparison) {
     return "comparacion";
@@ -685,6 +710,33 @@ export function createAnaliaScreenChatResponse({
     audit.dataStatus === "DEMO"
       ? Math.max(68, Math.min(88, 100 - Math.round(audit.densityScore / 3)))
       : 72;
+
+  if (intent === "sistema") {
+    return {
+      bullets: [
+        "Sin llave de IA, AnaliA solo usa una lectura DEMO deterministica y puede malinterpretar preguntas abiertas.",
+        "La respuesta anterior salio como resumen porque no existia una intencion especial para preguntas sobre el propio chat.",
+        "Con OPENAI_API_KEY configurada, la pregunta se envia al agente server-side y puede responder como conversacion real.",
+      ],
+      caveat:
+        "Esta respuesta explica el estado del agente; no es un insight operativo del negocio.",
+      confidence: 96,
+      criticalItems: [
+        "Falta configurar OPENAI_API_KEY para activar conversacion libre con IA.",
+      ],
+      directAnswer:
+        "Tienes razon: contestaba lo que no preguntaste porque, sin IA configurada, caia al resumen DEMO de la pantalla. Ahora estas preguntas se responden como estado del agente.",
+      intent,
+      sources: [
+        `Pantalla visible: ${audit.module}`,
+        "Estado de AnaliA",
+        "Configuracion server-side",
+      ],
+      suggestedNextStep:
+        "Configurar OPENAI_API_KEY en .env.local y reiniciar el servidor para activar conversacion real.",
+      title: "Por que AnaliA no respondio bien",
+    };
+  }
 
   if (intent === "critico") {
     return {

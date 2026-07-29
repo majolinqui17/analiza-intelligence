@@ -65,10 +65,11 @@ AnaliA esta disponible como burbuja flotante en las pantallas protegidas. El usu
 - lectura de la pantalla visible;
 - siguiente accion sugerida.
 - comparacion contra ano anterior, periodo comparable o 2025.
+- estado del propio agente cuando no entiende, contesta otra cosa o esta en modo DEMO.
 
 El chat usa la linea de negocio activa, el modulo actual, la auditoria visual y el texto visible de la pantalla. Cuando `OPENAI_API_KEY` esta configurada en servidor, la burbuja llama a `/api/analia-chat` para que AnaliA responda como agente conversacional de IA usando la pantalla visible y el historial reciente. Si falta la llave o el modelo no responde, vuelve al motor `DEMO` deterministico; no consulta datos privados, no ejecuta acciones y no presenta resultados como reales.
 
-Cada respuesta se presenta en burbujas breves de conversacion: la pregunta del usuario queda separada de la respuesta de AnaliA, con bullets cortos, siguiente paso, fuentes usadas, confianza y una cautela. Antes de responder, el chat filtra navegacion, filtros, botones y textos demasiado largos para evitar que el menu completo se mezcle con los insights. Si el usuario pide algo critico, AnaliA prioriza senales como riesgo, pendiente, alerta, densidad visual o falta de trazabilidad. Si pregunta por mejora contra el ano pasado, AnaliA responde directamente si la mejora es sana, parcial o insuficiente segun crecimiento, margen, meta, ocupacion y estado de la linea activa.
+Cada respuesta se presenta en burbujas breves de conversacion: la pregunta del usuario queda separada de la respuesta de AnaliA, con bullets cortos, siguiente paso, fuentes usadas, confianza y una cautela. Antes de responder, el chat filtra navegacion, filtros, botones y textos demasiado largos para evitar que el menu completo se mezcle con los insights. Si el usuario pide algo critico, AnaliA prioriza senales como riesgo, pendiente, alerta, densidad visual o falta de trazabilidad. Si pregunta por mejora contra el ano pasado, AnaliA responde directamente si la mejora es sana, parcial o insuficiente segun crecimiento, margen, meta, ocupacion y estado de la linea activa. Si pregunta por que el chat no contesta bien, AnaliA debe responder sobre su propio estado en vez de generar un resumen del dashboard.
 
 ## Seguridad y permisos
 

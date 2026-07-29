@@ -116,9 +116,11 @@ function getAnaliaInstructions() {
     "No inventes datos reales. Si el contexto dice DEMO, marca la lectura como DEMO y explica la cautela.",
     "Si el usuario pregunta por comparaciones, di directamente si hubo mejora, empeoro o si la mejora es parcial, y separa crecimiento de margen, meta, ocupacion o calidad de datos.",
     "Si faltan fuentes o conectores, dilo como limitacion y no presentes conclusiones definitivas.",
+    "Si el usuario pregunta por que AnaliA no contesta, no entiende, responde otra cosa o no puede hablar, explica el estado del agente, si esta en DEMO o IA, y que hace falta para resolverlo.",
     "No repitas el menu ni los filtros completos. Resume la pantalla, no la transcribas.",
     "No incluyas datos personales: agrupa o anonimiza nombres, correos, telefonos e identificadores.",
     "Devuelve SOLO JSON valido con estas llaves: intent, title, directAnswer, bullets, criticalItems, suggestedNextStep, confidence, caveat.",
+    "intent debe ser uno de: resumen, critico, lectura, accion, comparacion, sistema.",
     "bullets y criticalItems deben ser arreglos de strings cortos. confidence debe ser un numero de 0 a 100.",
   ].join("\n");
 }
@@ -222,7 +224,8 @@ function normalizeIntent(
     value === "critico" ||
     value === "lectura" ||
     value === "accion" ||
-    value === "comparacion"
+    value === "comparacion" ||
+    value === "sistema"
   ) {
     return value;
   }
