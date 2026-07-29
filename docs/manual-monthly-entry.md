@@ -15,6 +15,16 @@ La via manual principal para actualizar Analiza Intelligence sera un formulario 
 - La vista consolidada solo muestra historial; no permite publicar cierres porque no se deben mezclar negocios distintos.
 - AnaliA puede usar estos cierres para Insights, alertas tempranas, metas sugeridas y lectura de salud financiera.
 
+## Experiencia visual
+
+El formulario debe leerse como un asistente de cierre mensual, no como un tablero ejecutivo. La pantalla prioriza:
+
+- Encabezado claro de captura mensual.
+- Pasos visibles con pendientes por seccion.
+- Campos grandes, con selectores cuando el dato viene de catalogo.
+- Resumen lateral antes de publicar.
+- Reglas y metricas como apoyo, no como contenido principal.
+
 ## Roles y jerarquia
 
 - `super_admin`: gobierna permisos globales, conectores, auditoria y seguridad del sistema.

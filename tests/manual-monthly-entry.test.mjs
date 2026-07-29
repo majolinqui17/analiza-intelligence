@@ -28,8 +28,14 @@ const packageJson = readWorkspaceFile("package.json");
 const documentationExists = existsSync(join(root, "docs/manual-monthly-entry.md"));
 
 assert(
-  component.includes("Formulario mensual de cierre"),
+  component.includes("Llena el cierre mensual de la sucursal"),
   "Manual monthly dashboard must expose the monthly closing form.",
+);
+assert(
+  component.includes("Formulario en curso") &&
+    component.includes("Resumen para publicar") &&
+    component.includes("Control de carga"),
+  "Manual monthly dashboard must present the form as a friendly closing wizard.",
 );
 assert(
   component.includes("analiza:manual-monthly-history"),

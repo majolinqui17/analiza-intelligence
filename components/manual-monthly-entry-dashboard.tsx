@@ -2,18 +2,20 @@
 
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   CalendarClock,
   CheckCircle2,
   ClipboardList,
   DatabaseZap,
+  FileCheck2,
   History,
+  ListChecks,
   LockKeyhole,
   Save,
   ShieldCheck,
   Sparkles,
-  UsersRound,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -592,18 +594,29 @@ function ManualField({
   }
 
   return (
-    <label className="grid gap-2 rounded-md border bg-background p-3 text-sm">
+    <label className="grid gap-3 rounded-md border bg-card p-4 text-sm shadow-sm">
       <span className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-medium">{field.label}</span>
-        <Badge variant="outline">{field.required ? "Obligatorio" : "Opcional"}</Badge>
+        <span className="text-base font-semibold tracking-normal">
+          {field.label}
+        </span>
+        <Badge
+          className={
+            field.required
+              ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/10"
+              : undefined
+          }
+          variant="outline"
+        >
+          {field.required ? "Obligatorio" : "Opcional"}
+        </Badge>
       </span>
-      <span className="min-h-10 text-xs leading-5 text-muted-foreground">
+      <span className="min-h-10 text-sm leading-6 text-muted-foreground">
         {field.description}
       </span>
       <span className="relative">
         {isBranchSelector ? (
           <select
-            className="h-11 w-full rounded-md border bg-background px-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-12 w-full rounded-md border bg-background px-3 text-base outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
             disabled={readOnly}
             onChange={(event) => onChange(event.target.value)}
             value={value}
@@ -617,7 +630,7 @@ function ManualField({
           </select>
         ) : isBranchManagerSelector ? (
           <select
-            className="h-11 w-full rounded-md border bg-background px-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-12 w-full rounded-md border bg-background px-3 text-base outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
             disabled={readOnly}
             onChange={(event) => onChange(event.target.value)}
             value={value}
@@ -630,7 +643,7 @@ function ManualField({
           </select>
         ) : isAreaManagerSelector ? (
           <select
-            className="h-11 w-full rounded-md border bg-background px-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-12 w-full rounded-md border bg-background px-3 text-base outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
             disabled={readOnly}
             onChange={(event) => onChange(event.target.value)}
             value={value}
@@ -649,7 +662,7 @@ function ManualField({
         {!isSelectField ? (
           <Input
             className={cn(
-              "h-11",
+              "h-12 text-base",
               isCurrency && "pl-8",
               isPercent && "pr-10",
               readOnly && "bg-muted text-muted-foreground",
@@ -820,6 +833,18 @@ export function ManualMonthlyEntryDashboard() {
         )
       : 0;
   const currentStep = formSteps[activeStepIndex] ?? formSteps[0];
+  const currentStepMissingCount =
+    currentStep?.fields.filter(
+      (field) => field.required && !formValues[field.id]?.trim(),
+    ).length ?? 0;
+  const currentStepCompletionPercent =
+    currentStep && currentStep.fields.length > 0
+      ? Math.round(
+          ((currentStep.fields.length - currentStepMissingCount) /
+            currentStep.fields.length) *
+            100,
+        )
+      : 0;
   const canUseManualForm = activeLine !== "Consolidado";
   const historyLine = activeLine === "Consolidado" ? "Todas" : activeLine;
   const demoHistory = useMemo(
@@ -995,49 +1020,276 @@ export function ManualMonthlyEntryDashboard() {
   }
 
   return (
-    <section className={cn("grid gap-5 rounded-md border bg-card p-4", tone.border)}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="grid gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-              DEMO
-            </Badge>
-            <Badge className={tone.badge}>{activeLine}</Badge>
-            <Badge variant="outline">Manual sin conectores</Badge>
-          </div>
-          <div className="flex items-start gap-3">
-            <span
-              className={cn(
-                "grid size-10 shrink-0 place-items-center rounded-md text-white",
-                tone.accent,
-              )}
-            >
-              <ClipboardList className="size-5" />
-            </span>
-            <div>
-              <h2 className="text-2xl font-semibold tracking-normal">
-                Formulario mensual de cierre
-              </h2>
-              <p className="max-w-4xl text-sm leading-6 text-muted-foreground">
-                Los gerentes llenan un cierre mensual por linea y sucursal. El
-                sistema guarda historial, valida completitud y deja trazabilidad
-                para que AnaliA actualice Insights.
-              </p>
+    <section className="grid gap-6">
+      <header className={cn("rounded-md border bg-card", tone.border)}>
+        <div className="grid gap-4 p-5 lg:grid-cols-[1fr_320px] lg:items-center">
+          <div className="grid gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                DEMO
+              </Badge>
+              <Badge className={tone.badge}>{activeLine}</Badge>
+              <Badge variant="outline">Formulario manual</Badge>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <span
+                className={cn(
+                  "grid size-12 shrink-0 place-items-center rounded-md text-white",
+                  tone.accent,
+                )}
+              >
+                <FileCheck2 className="size-6" />
+              </span>
+              <div className="grid gap-2">
+                <p className="text-sm font-medium uppercase tracking-normal text-muted-foreground">
+                  Captura mensual de resultados
+                </p>
+                <h2 className="text-3xl font-semibold tracking-normal">
+                  Llena el cierre mensual de la sucursal
+                </h2>
+                <p className="max-w-4xl text-base leading-7 text-muted-foreground">
+                  Esta es la entrada manual que alimenta dashboards, Insights,
+                  alertas, metas y bonos mientras no existan conectores activos.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <aside className={cn("w-full rounded-md border p-3 text-sm xl:w-80", tone.soft)}>
-          <div className={cn("mb-2 flex items-center gap-2 font-medium", tone.text)}>
-            <DatabaseZap className="size-4" />
-            Manual ahora, conector despues
-          </div>
-          <p className="text-xs leading-5 text-muted-foreground">
-            Cuando exista API, este mismo mapa de datos servira para conectar
-            CRM, agenda, facturacion, inventario o ERP sin cambiar los KPIs.
-          </p>
-        </aside>
-      </div>
+          <aside className={cn("rounded-md border p-4", tone.soft, tone.border)}>
+            <div className={cn("mb-3 flex items-center gap-2 font-medium", tone.text)}>
+              <DatabaseZap className="size-4" />
+              Manual ahora, conector despues
+            </div>
+            <p className="text-sm leading-6 text-muted-foreground">
+              El mismo mapa de datos servira para CRM, agenda, facturacion,
+              inventario o ERP cuando existan APIs oficiales.
+            </p>
+          </aside>
+        </div>
+      </header>
+
+      {!canUseManualForm ? (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+          Selecciona una linea de negocio arriba para registrar un cierre
+          mensual. La vista consolidada solo muestra historial y no debe mezclar
+          datos operativos de negocios distintos.
+        </div>
+      ) : (
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <article className={cn("rounded-md border bg-card", tone.border)}>
+            <div className="grid gap-4 border-b p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="grid gap-1">
+                  <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                    <ListChecks className="size-4" />
+                    Formulario en curso
+                  </div>
+                  <h3 className="text-2xl font-semibold tracking-normal">
+                    Paso {activeStepIndex + 1}: {currentStep?.title}
+                  </h3>
+                  <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                    {currentStep?.description}
+                  </p>
+                </div>
+                <Badge variant="outline">
+                  {currentStepCompletionPercent}% de este paso
+                </Badge>
+              </div>
+
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn("h-full rounded-full", tone.accent)}
+                  style={{ width: `${completionPercent}%` }}
+                />
+              </div>
+
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {formSteps.map((step, index) => {
+                  const isActiveStep = activeStepIndex === index;
+                  const stepMissingCount = step.fields.filter(
+                    (field) => field.required && !formValues[field.id]?.trim(),
+                  ).length;
+                  const isCompleteStep = stepMissingCount === 0;
+
+                  return (
+                    <button
+                      className={cn(
+                        "flex items-center gap-3 rounded-md border bg-background p-3 text-left text-sm transition-colors hover:border-primary/50",
+                        isActiveStep && "border-primary bg-primary/5",
+                      )}
+                      key={step.id}
+                      onClick={() => setActiveStepIndex(index)}
+                      type="button"
+                    >
+                      <span
+                        className={cn(
+                          "grid size-8 shrink-0 place-items-center rounded-md border text-xs font-semibold",
+                          isCompleteStep &&
+                            "border-emerald-200 bg-emerald-50 text-emerald-800",
+                          isActiveStep &&
+                            "border-primary bg-primary text-primary-foreground",
+                        )}
+                      >
+                        {isCompleteStep ? (
+                          <CheckCircle2 className="size-4" />
+                        ) : (
+                          index + 1
+                        )}
+                      </span>
+                      <span className="grid min-w-0 gap-1">
+                        <span className="truncate font-medium">{step.title}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {stepMissingCount} pendientes
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid gap-5 p-5">
+              <p className="rounded-md border bg-muted/30 px-4 py-3 text-sm leading-6 text-muted-foreground">
+                {currentStep?.ownerNote}
+              </p>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                {currentStep?.fields.map((field) => (
+                  <ManualField
+                    areaManagerOptions={areaManagerOptions}
+                    branchManagerOptions={branchManagerOptions}
+                    branchOptions={branchOptions}
+                    field={field}
+                    key={field.id}
+                    onChange={(value) => updateField(field.id, value)}
+                    readOnly={
+                      ["area_zone", "load_deadline_date"].includes(field.id)
+                    }
+                    value={formValues[field.id] ?? ""}
+                  />
+                ))}
+              </div>
+
+              <div className="grid gap-3 rounded-md border bg-background p-4">
+                <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <AlertCircle className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <span>{notice}</span>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-xs leading-5 text-muted-foreground">
+                    Pais: {context?.countryName ?? "El Salvador"} · Sucursal:{" "}
+                    {selectedBranch?.name ?? "pendiente"} · Area:{" "}
+                    {selectedAreaManagerName ?? "pendiente"}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      disabled={activeStepIndex === 0}
+                      onClick={showPreviousStep}
+                      type="button"
+                      variant="outline"
+                    >
+                      <ArrowLeft className="size-4" />
+                      Anterior
+                    </Button>
+                    <Button
+                      disabled={activeStepIndex >= formSteps.length - 1}
+                      onClick={showNextStep}
+                      type="button"
+                      variant="outline"
+                    >
+                      Siguiente
+                      <ArrowRight className="size-4" />
+                    </Button>
+                    <Button
+                      onClick={() => saveSubmission("Borrador DEMO")}
+                      type="button"
+                      variant="secondary"
+                    >
+                      <Save className="size-4" />
+                      Guardar avance DEMO
+                    </Button>
+                    <Button
+                      onClick={() => saveSubmission("Publicado DEMO")}
+                      type="button"
+                    >
+                      <CheckCircle2 className="size-4" />
+                      Publicar cierre DEMO
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <aside className="grid content-start gap-4">
+            <section className={cn("rounded-md border bg-card p-4", tone.border)}>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 font-medium">
+                  <ClipboardList className="size-4 text-primary" />
+                  Resumen para publicar
+                </div>
+                <Badge className={tone.badge}>{completionPercent}% listo</Badge>
+              </div>
+              <div className="grid gap-3 text-sm">
+                <div className="grid gap-1 rounded-md bg-muted/40 p-3">
+                  <span className="text-xs text-muted-foreground">Periodo</span>
+                  <strong>{formValues.period || "Pendiente"}</strong>
+                </div>
+                <div className="grid gap-1 rounded-md bg-muted/40 p-3">
+                  <span className="text-xs text-muted-foreground">Sucursal</span>
+                  <strong>{selectedBranch?.name ?? "Seleccion pendiente"}</strong>
+                </div>
+                <div className="grid gap-1 rounded-md bg-muted/40 p-3">
+                  <span className="text-xs text-muted-foreground">
+                    Gerente sucursal
+                  </span>
+                  <strong>
+                    {selectedBranchManagerName ?? "Pendiente de asignar"}
+                  </strong>
+                </div>
+                <div className="grid gap-1 rounded-md bg-muted/40 p-3">
+                  <span className="text-xs text-muted-foreground">
+                    Gerente de area
+                  </span>
+                  <strong>{selectedAreaManagerName ?? "Pendiente de asignar"}</strong>
+                </div>
+              </div>
+            </section>
+
+            <section className="grid gap-3 rounded-md border bg-card p-4">
+              <div className="flex items-center gap-2 font-medium">
+                <CalendarClock className="size-4 text-primary" />
+                Control de carga
+              </div>
+              <div className="grid gap-2 text-sm leading-6 text-muted-foreground">
+                <span>Deadline: {deadlineDate}</span>
+                <span>Estado: {currentDeadlineStatus}</span>
+                <span>
+                  Penalizacion:{" "}
+                  {currentDeadlineStatus === "Tarde DEMO"
+                    ? "impacta score y bono"
+                    : "sin penalizacion"}
+                </span>
+                <span>{branchGroupCount || 0} sucursales bajo esta gerencia.</span>
+              </div>
+            </section>
+
+            <section className="grid gap-3 rounded-md border bg-card p-4">
+              <div className="flex items-center gap-2 font-medium">
+                <LockKeyhole className="size-4 text-primary" />
+                Reglas clave
+              </div>
+              <div className="grid gap-2 text-sm leading-6 text-muted-foreground">
+                <span>Sin datos personales de pacientes.</span>
+                <span>Publicar requiere todos los obligatorios.</span>
+                <span>Editar un cierre publicado requiere autorizacion.</span>
+                <span>AnaliA alerta si calidad baja de 70%.</span>
+              </div>
+            </section>
+          </aside>
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <ManualMetricCard
@@ -1065,198 +1317,6 @@ export function ManualMonthlyEntryDashboard() {
           value={formatPercent(summary.averageDataQualityScore)}
         />
       </div>
-
-      <div className="grid gap-3 lg:grid-cols-3">
-        <article className="grid gap-2 rounded-md border bg-background p-4">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <UsersRound className="size-4 text-primary" />
-            Jerarquia de gerencia
-          </div>
-          <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
-            <span>
-              Sucursal: {selectedBranch?.name ?? "Seleccion pendiente"}
-            </span>
-            <span>
-              Gerente sucursal:{" "}
-              {selectedBranchManagerName ?? "Pendiente de asignar"}
-            </span>
-            <span>
-              Gerente de area:{" "}
-              {selectedAreaManagerName ?? "Pendiente de asignar"}
-            </span>
-          </div>
-        </article>
-        <article className="grid gap-2 rounded-md border bg-background p-4">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <CalendarClock className="size-4 text-primary" />
-            Fecha limite
-          </div>
-          <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
-            <span>Deadline: {deadlineDate}</span>
-            <span>Estado: {currentDeadlineStatus}</span>
-            <span>
-              Penalizacion demo:{" "}
-              {currentDeadlineStatus === "Tarde DEMO"
-                ? "impacta score y bono"
-                : "sin penalizacion"}
-            </span>
-          </div>
-        </article>
-        <article className="grid gap-2 rounded-md border bg-background p-4">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <ShieldCheck className="size-4 text-primary" />
-            Grupo de area
-          </div>
-          <div className="grid gap-1 text-xs leading-5 text-muted-foreground">
-            <span>{branchGroupCount || 0} sucursales bajo esta gerencia.</span>
-            <span>Zona: {selectedBranch?.areaZone ?? "Pendiente"}</span>
-            <span>Fuente: {selectedBranch?.sourceTrace ?? "Catalogo DEMO"}</span>
-          </div>
-        </article>
-      </div>
-
-      {!canUseManualForm ? (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-          Selecciona una linea de negocio arriba para registrar un cierre
-          mensual. La vista consolidada solo muestra historial y no debe mezclar
-          datos operativos de negocios distintos.
-        </div>
-      ) : (
-        <div className="grid gap-4 xl:grid-cols-[280px_1fr_320px]">
-          <nav className="grid content-start gap-2 rounded-md border bg-muted/30 p-3">
-            {formSteps.map((step, index) => (
-              <button
-                className={cn(
-                  "grid gap-1 rounded-md border bg-background p-3 text-left text-sm transition-colors hover:border-primary/50",
-                  activeStepIndex === index && "border-primary bg-primary/5",
-                )}
-                key={step.id}
-                onClick={() => setActiveStepIndex(index)}
-                type="button"
-              >
-                <span className="font-medium">
-                  {index + 1}. {step.title}
-                </span>
-                <span className="text-xs leading-5 text-muted-foreground">
-                  {step.fields.length} campos
-                </span>
-              </button>
-            ))}
-          </nav>
-
-          <article className="grid gap-4 rounded-md border bg-muted/20 p-4">
-            <div className="grid gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-xl font-semibold tracking-normal">
-                  {currentStep?.title}
-                </h3>
-                <Badge variant="outline">
-                  Paso {activeStepIndex + 1} de {formSteps.length}
-                </Badge>
-              </div>
-              <p className="text-sm leading-6 text-muted-foreground">
-                {currentStep?.description}
-              </p>
-              <p className="rounded-md border bg-background px-3 py-2 text-xs leading-5 text-muted-foreground">
-                {currentStep?.ownerNote}
-              </p>
-            </div>
-
-            <div className="grid gap-3 lg:grid-cols-2">
-              {currentStep?.fields.map((field) => (
-                <ManualField
-                  areaManagerOptions={areaManagerOptions}
-                  branchManagerOptions={branchManagerOptions}
-                  branchOptions={branchOptions}
-                  field={field}
-                  key={field.id}
-                  onChange={(value) => updateField(field.id, value)}
-                  readOnly={
-                    ["area_zone", "load_deadline_date"].includes(field.id)
-                  }
-                  value={formValues[field.id] ?? ""}
-                />
-              ))}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background p-3">
-              <div className="grid gap-1 text-xs text-muted-foreground">
-                <span>{notice}</span>
-                <span>
-                  Pais: {context?.countryName ?? "El Salvador"} · Sucursal:{" "}
-                  {selectedBranch?.name ?? "pendiente"} · Area:{" "}
-                  {selectedBranch?.areaManagerName ?? "pendiente"}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  disabled={activeStepIndex === 0}
-                  onClick={showPreviousStep}
-                  type="button"
-                  variant="outline"
-                >
-                  <ArrowLeft className="size-4" />
-                  Anterior
-                </Button>
-                <Button
-                  disabled={activeStepIndex >= formSteps.length - 1}
-                  onClick={showNextStep}
-                  type="button"
-                  variant="outline"
-                >
-                  Siguiente
-                  <ArrowRight className="size-4" />
-                </Button>
-                <Button
-                  onClick={() => saveSubmission("Borrador DEMO")}
-                  type="button"
-                  variant="secondary"
-                >
-                  <Save className="size-4" />
-                  Guardar avance DEMO
-                </Button>
-                <Button
-                  onClick={() => saveSubmission("Publicado DEMO")}
-                  type="button"
-                >
-                  <CheckCircle2 className="size-4" />
-                  Publicar cierre DEMO
-                </Button>
-              </div>
-            </div>
-          </article>
-
-          <aside className="grid content-start gap-3">
-            <div className="rounded-md border bg-card p-4">
-              <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                <LockKeyhole className="size-4 text-primary" />
-                Reglas de cierre
-              </div>
-              <div className="grid gap-2 text-xs leading-5 text-muted-foreground">
-                <span>Datos personales no entran a dashboards.</span>
-                <span>Un cierre publicado conserva fuente, periodo y usuario.</span>
-                <span>La carga despues del dia 5 reduce puntualidad y bono.</span>
-                <span>Editar un cierre publicado requiere autorizacion.</span>
-                <span>AnaliA marca alerta si calidad baja de 70%.</span>
-                <span>La evaluacion 360 es anonima y se usa para coaching.</span>
-              </div>
-            </div>
-
-            <div className="rounded-md border bg-card p-4">
-              <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                <ShieldCheck className="size-4 text-primary" />
-                Datos que alimenta
-              </div>
-              <div className="grid gap-2 text-xs leading-5 text-muted-foreground">
-                <span>Resumen ejecutivo y salud financiera.</span>
-                <span>Operacion, citas, capacidad y ocupacion.</span>
-                <span>Sucursales, profesionales, servicios y bonos.</span>
-                <span>Insights, alertas tempranas y metas sugeridas.</span>
-              </div>
-            </div>
-          </aside>
-        </div>
-      )}
 
       <section className="grid gap-3 rounded-md border bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
