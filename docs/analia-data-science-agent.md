@@ -66,13 +66,13 @@ AnaliA esta disponible como burbuja flotante en las pantallas protegidas. El usu
 - siguiente accion sugerida.
 - comparacion contra ano anterior, periodo comparable o 2025.
 
-El chat usa la linea de negocio activa, el modulo actual, la auditoria visual y el texto visible de la pantalla. En esta fase responde con un motor `DEMO` deterministico; no consulta datos privados, no ejecuta acciones y no presenta resultados como reales.
+El chat usa la linea de negocio activa, el modulo actual, la auditoria visual y el texto visible de la pantalla. Cuando `OPENAI_API_KEY` esta configurada en servidor, la burbuja llama a `/api/analia-chat` para que AnaliA responda como agente conversacional de IA usando la pantalla visible y el historial reciente. Si falta la llave o el modelo no responde, vuelve al motor `DEMO` deterministico; no consulta datos privados, no ejecuta acciones y no presenta resultados como reales.
 
 Cada respuesta se presenta en burbujas breves de conversacion: la pregunta del usuario queda separada de la respuesta de AnaliA, con bullets cortos, siguiente paso, fuentes usadas, confianza y una cautela. Antes de responder, el chat filtra navegacion, filtros, botones y textos demasiado largos para evitar que el menu completo se mezcle con los insights. Si el usuario pide algo critico, AnaliA prioriza senales como riesgo, pendiente, alerta, densidad visual o falta de trazabilidad. Si pregunta por mejora contra el ano pasado, AnaliA responde directamente si la mejora es sana, parcial o insuficiente segun crecimiento, margen, meta, ocupacion y estado de la linea activa.
 
 ## Seguridad y permisos
 
-AnaliA solo prepara interpretaciones y borradores de accion. No ejecuta acciones sensibles sin confirmacion humana. Credenciales de conectores, llaves privilegiadas y validaciones de archivos deben permanecer en servidor.
+AnaliA solo prepara interpretaciones y borradores de accion. No ejecuta acciones sensibles sin confirmacion humana. Credenciales de conectores, llaves privilegiadas, `OPENAI_API_KEY` y validaciones de archivos deben permanecer en servidor. El navegador nunca recibe la llave; solo envia pregunta, modulo, linea activa e informacion visible filtrada.
 
 ## Conexion a datos reales
 

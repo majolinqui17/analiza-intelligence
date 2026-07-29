@@ -34,9 +34,16 @@ const openStorageKey = "analiza:analia-screen-chat-open";
 
 type AnaliaScreenChatMessage = {
   id: string;
+  mode: "ai" | "demo";
   question: string;
   response: AnaliaScreenChatResponse;
   createdAt: string;
+};
+
+type AnaliaChatApiResult = {
+  error?: string;
+  mode?: "ai" | "demo";
+  response?: unknown;
 };
 
 const quickQuestions = [
@@ -45,6 +52,34 @@ const quickQuestions = [
   "Lee esta pantalla",
   "Que hago primero?",
 ];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isAnaliaScreenChatResponse(
+  value: unknown,
+): value is AnaliaScreenChatResponse {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.intent === "string" &&
+    typeof value.title === "string" &&
+    typeof value.directAnswer === "string" &&
+    isStringArray(value.bullets) &&
+    isStringArray(value.criticalItems) &&
+    typeof value.suggestedNextStep === "string" &&
+    isStringArray(value.sources) &&
+    typeof value.confidence === "number" &&
+    typeof value.caveat === "string"
+  );
+}
 
 function normalizeChatText(value: string) {
   return value
@@ -209,6 +244,8 @@ export function DashboardValidationAgent() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const [lastResponseMode, setLastResponseMode] = useState<"ai" | "demo">("demo");
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<AnaliaScreenChatMessage[]>([]);
   const audit = useMemo(
@@ -258,35 +295,78 @@ export function DashboardValidationAgent() {
     });
   }
 
-  function askAnalia(questionText: string) {
+  async function askAnalia(questionText: string) {
     const trimmedQuestion = questionText.trim();
 
-    if (!trimmedQuestion) {
+    if (!trimmedQuestion || isThinking) {
       return;
     }
 
-    const response = createAnaliaScreenChatResponse({
+    const screenText = getReadableScreenText();
+    const fallbackResponse = createAnaliaScreenChatResponse({
       audit: currentAudit,
       businessLine: activeBusinessLine.line,
       question: trimmedQuestion,
-      screenText: getReadableScreenText(),
+      screenText,
     });
+    let response = fallbackResponse;
+    let mode: "ai" | "demo" = "demo";
+
+    setIsThinking(true);
+
+    try {
+      const apiResponse = await fetch("/api/analia-chat", {
+        body: JSON.stringify({
+          businessLine: activeBusinessLine.line,
+          history: messages.slice(-6).map((message) => ({
+            answer: message.response.directAnswer,
+            question: message.question,
+          })),
+          pathname,
+          question: trimmedQuestion,
+          screenText,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const apiResult = (await apiResponse.json().catch(() => null)) as
+        | AnaliaChatApiResult
+        | null;
+
+      if (
+        apiResponse.ok &&
+        apiResult &&
+        isAnaliaScreenChatResponse(apiResult.response)
+      ) {
+        response = apiResult.response;
+        mode = apiResult.mode === "ai" ? "ai" : "demo";
+      }
+    } catch {
+      response = {
+        ...fallbackResponse,
+        caveat:
+          "No pude contactar al agente server-side en este momento; respondo con lectura DEMO local.",
+      };
+    }
 
     setMessages((currentMessages) => [
       ...currentMessages,
       {
         createdAt: formatChatTime(),
         id: `analia-screen-chat-${Date.now()}`,
+        mode,
         question: trimmedQuestion,
         response,
       },
     ]);
+    setLastResponseMode(mode);
+    setIsThinking(false);
     setQuestion("");
   }
 
   function submitQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    askAnalia(question);
+    void askAnalia(question);
   }
 
   if (!isOpen) {
@@ -345,7 +425,8 @@ export function DashboardValidationAgent() {
                 Chat con AnaliA
               </span>
               <span className="block truncate text-xs opacity-80">
-                {audit.module} - {activeBusinessLine.line} - DEMO
+                {audit.module} - {activeBusinessLine.line} -{" "}
+                {lastResponseMode === "ai" ? "IA" : "DEMO"}
               </span>
             </span>
           </button>
@@ -398,8 +479,9 @@ export function DashboardValidationAgent() {
               {quickQuestions.map((item) => (
                 <Button
                   className="h-auto rounded-full px-3 py-2 text-left text-xs leading-4 sm:text-sm"
+                  disabled={isThinking}
                   key={item}
-                  onClick={() => askAnalia(item)}
+                  onClick={() => void askAnalia(item)}
                   size="sm"
                   type="button"
                   variant="outline"
@@ -418,7 +500,9 @@ export function DashboardValidationAgent() {
                 </span>
                 <div className="max-w-[88%] rounded-2xl rounded-bl-sm border bg-background px-3 py-2 text-sm leading-6 text-muted-foreground shadow-sm">
                   Hola, soy AnaliA. Puedo resumir esta pantalla, detectar algo
-                  critico o decirte que revisar primero. Trabajo en modo DEMO.
+                  critico, comparar contra periodos anteriores o leer el sistema
+                  como agente de IA. Si no hay llave configurada, respondo en
+                  modo DEMO.
                 </div>
               </div>
             ) : (
@@ -441,6 +525,15 @@ export function DashboardValidationAgent() {
                     </span>
                     <div className="max-w-[88%] rounded-2xl rounded-bl-sm border bg-background px-3 py-3 text-sm shadow-sm">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Badge
+                          className={cn(
+                            message.mode === "ai"
+                              ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
+                              : "bg-muted text-muted-foreground hover:bg-muted",
+                          )}
+                        >
+                          {message.mode === "ai" ? "IA" : "DEMO"}
+                        </Badge>
                         <Badge variant="outline">{message.response.intent}</Badge>
                         <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
                           Confianza {message.response.confidence}%
@@ -477,6 +570,16 @@ export function DashboardValidationAgent() {
                 </article>
               ))
             )}
+            {isThinking ? (
+              <div className="flex items-start gap-2">
+                <span className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Bot className="size-4 text-primary" />
+                </span>
+                <div className="max-w-[88%] rounded-2xl rounded-bl-sm border bg-background px-3 py-2 text-sm leading-6 text-muted-foreground shadow-sm">
+                  AnaliA esta leyendo esta pantalla y preparando una respuesta...
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <form
@@ -486,13 +589,16 @@ export function DashboardValidationAgent() {
             <Input
               aria-label="Pregunta para AnaliA"
               className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
+              disabled={isThinking}
               onChange={(event) => setQuestion(event.target.value)}
-              placeholder="Pregunta: resumen, critico, leer pantalla..."
+              placeholder="Pregunta sobre esta pantalla..."
               value={question}
             />
-            <Button className="rounded-full" type="submit">
+            <Button className="rounded-full" disabled={isThinking} type="submit">
               <Send className="size-4" />
-              <span className="hidden sm:inline">Preguntar</span>
+              <span className="hidden sm:inline">
+                {isThinking ? "Leyendo" : "Preguntar"}
+              </span>
             </Button>
           </form>
 

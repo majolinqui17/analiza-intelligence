@@ -2,17 +2,21 @@ import { readFileSync, statSync } from "node:fs";
 
 const modelPath = "lib/analytics/dashboard-validation-agent.ts";
 const componentPath = "components/dashboard-validation-agent.tsx";
+const apiRoutePath = "app/api/analia-chat/route.ts";
 const appLayoutPath = "app/layout.tsx";
 const globalStylesPath = "app/globals.css";
 const docsPath = "docs/analia-data-science-agent.md";
+const envExamplePath = ".env.example";
 const packagePath = "package.json";
 
 for (const file of [
   modelPath,
   componentPath,
+  apiRoutePath,
   appLayoutPath,
   globalStylesPath,
   docsPath,
+  envExamplePath,
   packagePath,
 ]) {
   statSync(file);
@@ -20,9 +24,11 @@ for (const file of [
 
 const model = readFileSync(modelPath, "utf8");
 const component = readFileSync(componentPath, "utf8");
+const apiRoute = readFileSync(apiRoutePath, "utf8");
 const appLayout = readFileSync(appLayoutPath, "utf8");
 const globalStyles = readFileSync(globalStylesPath, "utf8");
 const docs = readFileSync(docsPath, "utf8");
+const envExample = readFileSync(envExamplePath, "utf8");
 const packageJson = readFileSync(packagePath, "utf8");
 
 for (const requiredModelText of [
@@ -82,6 +88,10 @@ for (const requiredComponentText of [
   "rounded-bl-sm",
   "max-w-[82%]",
   "createAnaliaScreenChatResponse",
+  "/api/analia-chat",
+  "isThinking",
+  "AnaliA esta leyendo esta pantalla",
+  "mode === \"ai\"",
   "Fuentes:",
   "data-analia-dashboard-mode",
   "data-analia-dashboard-density",
@@ -92,6 +102,22 @@ for (const requiredComponentText of [
 ]) {
   if (!component.includes(requiredComponentText)) {
     throw new Error(`Dashboard validation component is missing: ${requiredComponentText}`);
+  }
+}
+
+for (const requiredApiRouteText of [
+  "OPENAI_API_KEY",
+  "ANALIA_OPENAI_MODEL",
+  "https://api.openai.com/v1/responses",
+  "store: false",
+  "Agente IA server-side",
+  "sanitizeText",
+  "createAnaliaScreenChatResponse",
+  "extractOpenAIResponseText",
+  "Devuelve SOLO JSON valido",
+]) {
+  if (!apiRoute.includes(requiredApiRouteText)) {
+    throw new Error(`AnaliA API route is missing: ${requiredApiRouteText}`);
   }
 }
 
@@ -117,12 +143,23 @@ for (const requiredDocsText of [
   "Muy cargada",
   "Burbuja de chat global",
   "lectura de la pantalla visible",
+  "/api/analia-chat",
+  "OPENAI_API_KEY",
   "burbujas breves",
   "filtra navegacion",
   "motor `DEMO` deterministico",
 ]) {
   if (!docs.includes(requiredDocsText)) {
     throw new Error(`AnaliA docs are missing: ${requiredDocsText}`);
+  }
+}
+
+for (const requiredEnvText of [
+  "OPENAI_API_KEY",
+  "ANALIA_OPENAI_MODEL",
+]) {
+  if (!envExample.includes(requiredEnvText)) {
+    throw new Error(`Env example is missing: ${requiredEnvText}`);
   }
 }
 
