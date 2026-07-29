@@ -243,7 +243,6 @@ export function DashboardValidationAgent() {
   const activeBusinessLine = useActiveBusinessLine();
   const [isOpen, setIsOpen] = useState(false);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
-  const [isHidden, setIsHidden] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [lastResponseMode, setLastResponseMode] = useState<"ai" | "demo">("demo");
   const [question, setQuestion] = useState("");
@@ -281,7 +280,27 @@ export function DashboardValidationAgent() {
     };
   }, [audit]);
 
-  if (!audit || isHidden || !pathname.startsWith("/protected")) {
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setIsOpen(false);
+      setIsAuditOpen(false);
+      window.localStorage.setItem(openStorageKey, "false");
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
+  if (!audit || !pathname.startsWith("/protected")) {
     return null;
   }
 
@@ -293,6 +312,12 @@ export function DashboardValidationAgent() {
       window.localStorage.setItem(openStorageKey, String(nextValue));
       return nextValue;
     });
+  }
+
+  function closePanel() {
+    setIsOpen(false);
+    setIsAuditOpen(false);
+    window.localStorage.setItem(openStorageKey, "false");
   }
 
   async function askAnalia(questionText: string) {
@@ -449,18 +474,20 @@ export function DashboardValidationAgent() {
               />
             </Button>
             <Button
-              aria-label="Cerrar chat"
-              onClick={toggleOpen}
+              aria-label="Minimizar chat"
+              onClick={closePanel}
               size="icon"
+              title="Minimizar chat"
               type="button"
               variant="ghost"
             >
               <MessageSquareText className="size-4" />
             </Button>
             <Button
-              aria-label="Ocultar AnaliA"
-              onClick={() => setIsHidden(true)}
+              aria-label="Cerrar ventana de AnaliA"
+              onClick={closePanel}
               size="icon"
+              title="Cerrar ventana de AnaliA"
               type="button"
               variant="ghost"
             >
