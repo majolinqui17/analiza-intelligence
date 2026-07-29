@@ -22,11 +22,23 @@ import {
 } from "@/lib/analytics/demo-business-modules";
 import {
   demoBranches,
+  demoCountryOptions,
   demoCompanyOptions,
+  demoOperationalAreas,
   demoRoleProfiles,
   roleKeys,
   type RoleKey,
 } from "@/lib/tenant/demo-context";
+import {
+  buildSoftDeactivationPlan,
+  canCreateBranch,
+  canCreateOperationalArea,
+  canInviteUser,
+  getCreatableRoles,
+  isSuperAdministrator,
+  type DelegationActor,
+  type ScopeBoundary,
+} from "@/lib/tenant/delegation-policy";
 import { cn } from "@/lib/utils";
 
 const storageKey = "analiza:selected-context";
@@ -54,11 +66,16 @@ type DemoManagedUser = {
   fullName: string;
   email: string;
   roleKey: RoleKey;
+  organizationScope: string;
+  countryScope: string;
   businessScope: string;
   areaScope?: string;
   branchScope: string;
-  status: "Activo" | "Pendiente";
+  status: "Activo" | "Pendiente invitacion" | "Inactivo";
   createdAt: string;
+  deactivatedAt?: string;
+  invitationStatus?: "Pendiente" | "Aceptada" | "Revocada";
+  reassignmentRequired?: boolean;
 };
 
 const businessHealth = [
@@ -86,6 +103,7 @@ const businessHealth = [
 ];
 
 const allBusinessScope = "Todas las lineas de negocio";
+const allCountryScope = "Todos los paises";
 const allAreaScope = "Todas las gerencias de area";
 const allBranchScope = "Todas las sucursales";
 const initialDemoUsers: DemoManagedUser[] = [
@@ -93,7 +111,9 @@ const initialDemoUsers: DemoManagedUser[] = [
     id: "demo-admin",
     fullName: "Administrador DEMO",
     email: "admin.demo@analiza.local",
-    roleKey: "webmaster_admin",
+    roleKey: "super_admin",
+    organizationScope: "Grupo Analiza DEMO",
+    countryScope: allCountryScope,
     businessScope: allBusinessScope,
     areaScope: allAreaScope,
     branchScope: allBranchScope,
@@ -122,7 +142,7 @@ function readStoredContext() {
 
 function readActiveDemoRole(): RoleKey {
   if (typeof window === "undefined") {
-    return "webmaster_admin";
+    return "super_admin";
   }
 
   const storedRole = window.localStorage.getItem(roleStorageKey);
@@ -131,7 +151,7 @@ function readActiveDemoRole(): RoleKey {
     return storedRole as RoleKey;
   }
 
-  return "webmaster_admin";
+  return "super_admin";
 }
 
 function readDemoUsers() {
@@ -159,6 +179,86 @@ function persistDemoUsers(users: DemoManagedUser[]) {
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function buildScopeBoundary({
+  areaScope,
+  branchScope,
+  businessScope,
+  countryScope,
+}: {
+  areaScope?: string;
+  branchScope: string;
+  businessScope: string;
+  countryScope: string;
+}): ScopeBoundary {
+  return {
+    branchId: branchScope === allBranchScope ? null : branchScope,
+    companyId: businessScope === allBusinessScope ? null : businessScope,
+    countryId: countryScope === allCountryScope ? null : countryScope,
+    operationalAreaId:
+      !areaScope || areaScope === allAreaScope ? null : areaScope,
+    organizationId: "Grupo Analiza DEMO",
+  };
+}
+
+function buildDelegationActor(
+  roleKey: RoleKey,
+  scope: {
+    areaScope?: string;
+    branchScope: string;
+    businessScope: string;
+    countryScope: string;
+  },
+): DelegationActor {
+  return {
+    canInviteOperationalUsers: roleKey === "gerente_sucursal",
+    roleKey,
+    scope: buildScopeBoundary(scope),
+    userId: "active-demo-user",
+  };
+}
+
+function getRoleOptionsForValue(roleKey: RoleKey) {
+  return roleKeys.includes(roleKey) ? roleKeys : [roleKey, ...roleKeys];
+}
+
+function getDefaultRoleForActor(actorRole: RoleKey) {
+  return getCreatableRoles(actorRole, {
+    canInviteOperationalUsers: actorRole === "gerente_sucursal",
+  })[0] ?? "viewer";
+}
+
+function getCountryScopeLabel(countryScope: string) {
+  return (
+    demoCountryOptions.find((country) => country.id === countryScope)?.name ??
+    countryScope
+  );
+}
+
+function getBusinessScopeLabel(businessScope: string) {
+  return (
+    demoCompanyOptions.find((company) => company.id === businessScope)?.name ??
+    businessScope
+  );
+}
+
+function getAreaScopeLabel(areaScope?: string) {
+  if (!areaScope) {
+    return allAreaScope;
+  }
+
+  return (
+    demoOperationalAreas.find((area) => area.id === areaScope)?.name ??
+    areaScope
+  );
+}
+
+function getBranchScopeLabel(branchScope: string) {
+  return (
+    demoBranches.find((branch) => branch.id === branchScope)?.name ??
+    branchScope
+  );
 }
 
 function metricToneClass(tone: ModuleMetric["tone"]) {
@@ -356,47 +456,138 @@ function UsersAndPermissionsManager({
 }: {
   context: StoredContext | null;
 }) {
-  const [activeRole, setActiveRole] = useState<RoleKey>("webmaster_admin");
+  const [activeRole, setActiveRole] = useState<RoleKey>("super_admin");
   const [users, setUsers] = useState<DemoManagedUser[]>(initialDemoUsers);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [roleKey, setRoleKey] = useState<RoleKey>("gerente_sucursal");
+  const [roleKey, setRoleKey] = useState<RoleKey>("gerente_area");
+  const [countryScope, setCountryScope] = useState(allCountryScope);
   const [businessScope, setBusinessScope] = useState(allBusinessScope);
   const [areaScope, setAreaScope] = useState(allAreaScope);
   const [branchScope, setBranchScope] = useState(allBranchScope);
   const [message, setMessage] = useState("");
 
-  const isWebmaster = activeRole === "webmaster_admin";
   const businessOptions = useMemo(
     () => [
-      allBusinessScope,
+      { label: allBusinessScope, value: allBusinessScope },
       ...demoCompanyOptions
         .filter((company) => !company.isConsolidated)
-        .map((company) => company.name),
+        .map((company) => ({ label: company.name, value: company.id })),
     ],
     [],
   );
-  const branchOptions = useMemo(
+  const countryOptions = useMemo(
     () => [
-      allBranchScope,
-      ...Array.from(new Set(demoBranches.map((branch) => branch.name))).sort(),
+      { label: allCountryScope, value: allCountryScope },
+      ...demoCountryOptions
+        .filter((country) => country.scope !== "regional")
+        .map((country) => ({ label: country.name, value: country.id })),
     ],
     [],
   );
   const areaOptions = useMemo(
     () => [
-      allAreaScope,
-      ...Array.from(
-        new Set(
-          demoBranches
-            .map((branch) => branch.areaManagerName)
-            .filter((managerName): managerName is string =>
-              Boolean(managerName),
-            ),
-        ),
-      ).sort(),
+      { label: allAreaScope, value: allAreaScope },
+      ...demoOperationalAreas
+        .filter(
+          (area) =>
+            (countryScope === allCountryScope ||
+              area.countryId === countryScope) &&
+            (businessScope === allBusinessScope ||
+              area.companyId === businessScope),
+        )
+        .map((area) => ({
+          label: `${area.name} · ${getBusinessScopeLabel(area.companyId)}`,
+          value: area.id,
+        })),
     ],
-    [],
+    [businessScope, countryScope],
+  );
+  const branchOptions = useMemo(
+    () => [
+      { label: allBranchScope, value: allBranchScope },
+      ...demoBranches
+        .filter(
+          (branch) =>
+            (countryScope === allCountryScope ||
+              branch.countryId === countryScope) &&
+            (businessScope === allBusinessScope ||
+              branch.companyId === businessScope) &&
+            (areaScope === allAreaScope ||
+              branch.operationalAreaId === areaScope),
+        )
+        .map((branch) => ({
+          label: `${branch.name} · ${getBusinessScopeLabel(branch.companyId)}`,
+          value: branch.id,
+        })),
+    ],
+    [areaScope, businessScope, countryScope],
+  );
+  const selectedBranch = useMemo(
+    () => demoBranches.find((branch) => branch.id === branchScope),
+    [branchScope],
+  );
+  const selectedArea = useMemo(
+    () => demoOperationalAreas.find((area) => area.id === areaScope),
+    [areaScope],
+  );
+  const actorAreaScope =
+    branchScope !== allBranchScope
+      ? selectedBranch?.operationalAreaId ?? areaScope
+      : areaScope;
+  const actorBusinessScope =
+    branchScope !== allBranchScope
+      ? selectedBranch?.companyId ?? businessScope
+      : areaScope !== allAreaScope
+        ? selectedArea?.companyId ?? businessScope
+        : businessScope;
+  const actorCountryScope =
+    branchScope !== allBranchScope
+      ? selectedBranch?.countryId ?? countryScope
+      : areaScope !== allAreaScope
+        ? selectedArea?.countryId ?? countryScope
+        : countryScope;
+  const actor = useMemo(
+    () =>
+      buildDelegationActor(activeRole, {
+        areaScope: actorAreaScope,
+        branchScope,
+        businessScope: actorBusinessScope,
+        countryScope: actorCountryScope,
+      }),
+    [
+      activeRole,
+      actorAreaScope,
+      actorBusinessScope,
+      actorCountryScope,
+      branchScope,
+    ],
+  );
+  const creatableRoles = useMemo(
+    () =>
+      getCreatableRoles(activeRole, {
+        canInviteOperationalUsers: activeRole === "gerente_sucursal",
+      }),
+    [activeRole],
+  );
+  const canCreateUsers = creatableRoles.length > 0;
+  const canCreateBranchesForScope = canCreateBranch(
+    actor,
+    buildScopeBoundary({
+      areaScope: actorAreaScope,
+      branchScope: allBranchScope,
+      businessScope: actorBusinessScope,
+      countryScope: actorCountryScope,
+    }),
+  );
+  const canCreateAreasForScope = canCreateOperationalArea(
+    actor,
+    buildScopeBoundary({
+      areaScope: allAreaScope,
+      branchScope: allBranchScope,
+      businessScope: actorBusinessScope,
+      countryScope: actorCountryScope,
+    }),
   );
 
   useEffect(() => {
@@ -417,33 +608,106 @@ function UsersAndPermissionsManager({
   }, []);
 
   useEffect(() => {
+    if (context?.countryName) {
+      setCountryScope(
+        countryOptions.find((country) => country.label === context.countryName)
+          ?.value ?? allCountryScope,
+      );
+    }
+
     if (context?.companyName) {
       setBusinessScope(
-        businessOptions.includes(context.companyName)
-          ? context.companyName
-          : allBusinessScope,
+        businessOptions.find((business) => business.label === context.companyName)
+          ?.value ?? allBusinessScope,
       );
     }
 
     if (context?.branchName) {
       setBranchScope(
-        branchOptions.includes(context.branchName)
-          ? context.branchName
-          : allBranchScope,
+        demoBranches.find((branch) => branch.name === context.branchName)?.id ??
+          allBranchScope,
       );
     }
   }, [
-    branchOptions,
     businessOptions,
+    countryOptions,
     context?.branchName,
     context?.companyName,
+    context?.countryName,
   ]);
+
+  useEffect(() => {
+    if (!creatableRoles.includes(roleKey)) {
+      setRoleKey(getDefaultRoleForActor(activeRole));
+    }
+  }, [activeRole, creatableRoles, roleKey]);
+
+  useEffect(() => {
+    if (!areaOptions.some((area) => area.value === areaScope)) {
+      setAreaScope(allAreaScope);
+    }
+  }, [areaOptions, areaScope]);
+
+  useEffect(() => {
+    if (!branchOptions.some((branch) => branch.value === branchScope)) {
+      setBranchScope(allBranchScope);
+    }
+  }, [branchOptions, branchScope]);
 
   function createDemoUser(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!isWebmaster) {
-      setMessage("Solo Webmaster / Administrador puede crear usuarios.");
+    const roleRequiresArea =
+      roleKey === "gerente_area" ||
+      roleKey === "gerente_sucursal" ||
+      roleKey === "usuario_operativo";
+    const roleRequiresBranch =
+      roleKey === "gerente_sucursal" || roleKey === "usuario_operativo";
+    const targetAreaScope =
+      roleKey === "gerente_area"
+        ? areaScope
+        : roleRequiresBranch
+          ? selectedBranch?.operationalAreaId ?? areaScope
+          : allAreaScope;
+    const targetBranchScope = roleRequiresBranch ? branchScope : allBranchScope;
+    const targetBusinessScope =
+      isSuperAdministrator(roleKey) || roleKey === "ceo"
+        ? allBusinessScope
+        : roleRequiresBranch && selectedBranch
+          ? selectedBranch.companyId
+          : roleKey === "gerente_area" && selectedArea
+            ? selectedArea.companyId
+            : businessScope;
+    const targetCountryScope =
+      isSuperAdministrator(roleKey) || roleKey === "ceo"
+        ? allCountryScope
+        : roleRequiresBranch && selectedBranch
+          ? selectedBranch.countryId
+          : roleKey === "gerente_area" && selectedArea
+            ? selectedArea.countryId
+            : countryScope;
+
+    if (roleRequiresArea && targetAreaScope === allAreaScope) {
+      setMessage("Selecciona la gerencia de area antes de invitar este rol.");
+      return;
+    }
+
+    if (roleRequiresBranch && targetBranchScope === allBranchScope) {
+      setMessage("Selecciona la sucursal antes de invitar este rol.");
+      return;
+    }
+
+    const targetScope = buildScopeBoundary({
+      areaScope: targetAreaScope,
+      branchScope: targetBranchScope,
+      businessScope: targetBusinessScope,
+      countryScope: targetCountryScope,
+    });
+
+    if (!canInviteUser(actor, { roleKey, scope: targetScope })) {
+      setMessage(
+        "Tu rol solo puede invitar usuarios de nivel inferior y dentro de tu alcance.",
+      );
       return;
     }
 
@@ -465,14 +729,14 @@ function UsersAndPermissionsManager({
         id: `demo-user-${Date.now()}`,
         fullName: normalizedName,
         email: normalizedEmail,
+        organizationScope: "Grupo Analiza DEMO",
+        countryScope: targetCountryScope,
         roleKey,
-        businessScope:
-          roleKey === "webmaster_admin" || roleKey === "ceo"
-            ? allBusinessScope
-            : businessScope,
-        areaScope: roleKey === "gerente_area" ? areaScope : allAreaScope,
-        branchScope: roleKey === "gerente_sucursal" ? branchScope : allBranchScope,
-        status: "Activo",
+        businessScope: targetBusinessScope,
+        areaScope: targetAreaScope,
+        branchScope: targetBranchScope,
+        invitationStatus: "Pendiente",
+        status: "Pendiente invitacion",
         createdAt: todayIsoDate(),
       },
       ...users,
@@ -482,14 +746,31 @@ function UsersAndPermissionsManager({
     persistDemoUsers(nextUsers);
     setFullName("");
     setEmail("");
-    setRoleKey("gerente_sucursal");
+    setRoleKey(getDefaultRoleForActor(activeRole));
+    setCountryScope(allCountryScope);
+    setBusinessScope(allBusinessScope);
     setAreaScope(allAreaScope);
-    setMessage("Usuario DEMO creado con su rol asignado.");
+    setBranchScope(allBranchScope);
+    setMessage("Invitacion DEMO creada. La cuenta queda pendiente hasta aceptar.");
   }
 
   function updateUserRole(userId: string, nextRole: RoleKey) {
-    if (!isWebmaster) {
-      setMessage("Solo Webmaster / Administrador puede cambiar roles.");
+    const userToUpdate = users.find((user) => user.id === userId);
+
+    if (!userToUpdate) {
+      setMessage("No encontre el usuario DEMO seleccionado.");
+      return;
+    }
+
+    const nextScope = buildScopeBoundary({
+      areaScope: userToUpdate.areaScope,
+      branchScope: userToUpdate.branchScope,
+      businessScope: userToUpdate.businessScope,
+      countryScope: userToUpdate.countryScope,
+    });
+
+    if (!canInviteUser(actor, { roleKey: nextRole, scope: nextScope })) {
+      setMessage("No puedes asignar un rol igual, superior o fuera de tu alcance.");
       return;
     }
 
@@ -499,7 +780,7 @@ function UsersAndPermissionsManager({
             ...user,
             roleKey: nextRole,
             businessScope:
-              nextRole === "webmaster_admin" || nextRole === "ceo"
+              isSuperAdministrator(nextRole) || nextRole === "ceo"
                 ? allBusinessScope
                 : user.businessScope,
             areaScope:
@@ -517,6 +798,58 @@ function UsersAndPermissionsManager({
     setMessage("Rol actualizado en usuarios DEMO.");
   }
 
+  function deactivateDemoUser(userId: string) {
+    const userToDeactivate = users.find((user) => user.id === userId);
+
+    if (!userToDeactivate) {
+      setMessage("No encontre el usuario DEMO seleccionado.");
+      return;
+    }
+
+    const deactivationPlan = buildSoftDeactivationPlan({
+      actor,
+      subordinateCount:
+        userToDeactivate.roleKey === "gerente_area" ||
+        userToDeactivate.roleKey === "gerente_operaciones"
+          ? 1
+          : 0,
+      target: {
+        roleKey: userToDeactivate.roleKey,
+        scope: buildScopeBoundary({
+          areaScope: userToDeactivate.areaScope,
+          branchScope: userToDeactivate.branchScope,
+          businessScope: userToDeactivate.businessScope,
+          countryScope: userToDeactivate.countryScope,
+        }),
+      },
+      targetBranchCount:
+        userToDeactivate.roleKey === "gerente_area" ||
+        userToDeactivate.roleKey === "gerente_sucursal"
+          ? 1
+          : 0,
+    });
+
+    if (!deactivationPlan.canDeactivate) {
+      setMessage("No puedes desactivar usuarios de nivel igual, superior o fuera de alcance.");
+      return;
+    }
+
+    const nextUsers = users.map((user) =>
+      user.id === userId
+        ? {
+            ...user,
+            deactivatedAt: todayIsoDate(),
+            reassignmentRequired: deactivationPlan.requiresReassignment,
+            status: "Inactivo" as const,
+          }
+        : user,
+    );
+
+    setUsers(nextUsers);
+    persistDemoUsers(nextUsers);
+    setMessage(deactivationPlan.reason);
+  }
+
   return (
     <section className="grid gap-4 xl:grid-cols-[420px_1fr]">
       <form
@@ -526,24 +859,37 @@ function UsersAndPermissionsManager({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm font-medium">
             <UserPlus className="size-4 text-primary" />
-            Crear usuario DEMO
+            Invitar usuario DEMO
           </div>
-          <Badge variant={isWebmaster ? "outline" : "secondary"}>
+          <Badge variant={canCreateUsers ? "outline" : "secondary"}>
             {demoRoleProfiles[activeRole].label}
           </Badge>
         </div>
 
-        {!isWebmaster ? (
+        {!canCreateUsers ? (
           <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
             <LockKeyhole className="mt-0.5 size-4 shrink-0" />
-            Solo Webmaster / Administrador puede crear usuarios y asignar roles.
+            Tu rol actual no tiene delegacion para invitar usuarios.
           </div>
         ) : null}
+
+        <div className="grid gap-2 rounded-md border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
+          <span>
+            Puedes invitar:{" "}
+            {creatableRoles.length > 0
+              ? creatableRoles.map((role) => demoRoleProfiles[role].label).join(", ")
+              : "ningun rol"}
+          </span>
+          <span>
+            Sucursales: {canCreateBranchesForScope ? "puedes crear" : "solo lectura/asignadas"} ·
+            Areas: {canCreateAreasForScope ? "puedes crear" : "solo asignadas"}
+          </span>
+        </div>
 
         <label className="grid gap-1 text-sm">
           <span className="font-medium">Nombre</span>
           <Input
-            disabled={!isWebmaster}
+            disabled={!canCreateUsers}
             onChange={(event) => setFullName(event.target.value)}
             placeholder="Nombre del usuario"
             value={fullName}
@@ -553,7 +899,7 @@ function UsersAndPermissionsManager({
         <label className="grid gap-1 text-sm">
           <span className="font-medium">Correo</span>
           <Input
-            disabled={!isWebmaster}
+            disabled={!canCreateUsers}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="correo@analiza.com"
             type="email"
@@ -565,11 +911,11 @@ function UsersAndPermissionsManager({
           <span className="font-medium">Rol</span>
           <select
             className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
-            disabled={!isWebmaster}
+            disabled={!canCreateUsers}
             onChange={(event) => setRoleKey(event.target.value as RoleKey)}
             value={roleKey}
           >
-            {roleKeys.map((role) => (
+            {creatableRoles.map((role) => (
               <option key={role} value={role}>
                 {demoRoleProfiles[role].label}
               </option>
@@ -581,22 +927,44 @@ function UsersAndPermissionsManager({
         </label>
 
         <label className="grid gap-1 text-sm">
+          <span className="font-medium">Pais</span>
+          <select
+            className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+            disabled={
+              !canCreateUsers || isSuperAdministrator(roleKey) || roleKey === "ceo"
+            }
+            onChange={(event) => setCountryScope(event.target.value)}
+            value={
+              isSuperAdministrator(roleKey) || roleKey === "ceo"
+                ? allCountryScope
+                : countryScope
+            }
+          >
+            {countryOptions.map((country) => (
+              <option key={country.value} value={country.value}>
+                {country.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="grid gap-1 text-sm">
           <span className="font-medium">Linea de negocio</span>
           <select
             className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
             disabled={
-              !isWebmaster || roleKey === "webmaster_admin" || roleKey === "ceo"
+              !canCreateUsers || isSuperAdministrator(roleKey) || roleKey === "ceo"
             }
             onChange={(event) => setBusinessScope(event.target.value)}
             value={
-              roleKey === "webmaster_admin" || roleKey === "ceo"
+              isSuperAdministrator(roleKey) || roleKey === "ceo"
                 ? allBusinessScope
                 : businessScope
             }
           >
             {businessOptions.map((business) => (
-              <option key={business} value={business}>
-                {business}
+              <option key={business.value} value={business.value}>
+                {business.label}
               </option>
             ))}
           </select>
@@ -606,13 +974,24 @@ function UsersAndPermissionsManager({
           <span className="font-medium">Gerencia de area</span>
           <select
             className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
-            disabled={!isWebmaster || roleKey !== "gerente_area"}
+            disabled={
+              !canCreateUsers ||
+              !["gerente_area", "gerente_sucursal", "usuario_operativo"].includes(
+                roleKey,
+              )
+            }
             onChange={(event) => setAreaScope(event.target.value)}
-            value={roleKey === "gerente_area" ? areaScope : allAreaScope}
+            value={
+              ["gerente_area", "gerente_sucursal", "usuario_operativo"].includes(
+                roleKey,
+              )
+                ? areaScope
+                : allAreaScope
+            }
           >
             {areaOptions.map((area) => (
-              <option key={area} value={area}>
-                {area}
+              <option key={area.value} value={area.value}>
+                {area.label}
               </option>
             ))}
           </select>
@@ -622,13 +1001,20 @@ function UsersAndPermissionsManager({
           <span className="font-medium">Sucursal</span>
           <select
             className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
-            disabled={!isWebmaster || roleKey !== "gerente_sucursal"}
+            disabled={
+              !canCreateUsers ||
+              !["gerente_sucursal", "usuario_operativo"].includes(roleKey)
+            }
             onChange={(event) => setBranchScope(event.target.value)}
-            value={roleKey === "gerente_sucursal" ? branchScope : allBranchScope}
+            value={
+              ["gerente_sucursal", "usuario_operativo"].includes(roleKey)
+                ? branchScope
+                : allBranchScope
+            }
           >
             {branchOptions.map((branch) => (
-              <option key={branch} value={branch}>
-                {branch}
+              <option key={branch.value} value={branch.value}>
+                {branch.label}
               </option>
             ))}
           </select>
@@ -640,67 +1026,112 @@ function UsersAndPermissionsManager({
           </div>
         ) : null}
 
-        <Button disabled={!isWebmaster} type="submit">
+        <Button disabled={!canCreateUsers} type="submit">
           <UserPlus className="size-4" />
-          Crear usuario
+          Enviar invitacion
         </Button>
       </form>
 
       <section className="rounded-md border bg-card p-4">
         <div className="mb-4 flex items-center gap-2 text-sm font-medium">
           <ClipboardList className="size-4 text-primary" />
-          Usuarios creados
+          Invitaciones y usuarios
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-left text-sm">
+          <table className="w-full min-w-[1120px] text-left text-sm">
             <thead className="text-xs text-muted-foreground">
               <tr className="border-b">
                 <th className="py-2 pr-4 font-medium">Usuario</th>
                 <th className="py-2 pr-4 font-medium">Rol</th>
+                <th className="py-2 pr-4 font-medium">Pais</th>
                 <th className="py-2 pr-4 font-medium">Linea</th>
                 <th className="py-2 pr-4 font-medium">Gerencia de area</th>
                 <th className="py-2 pr-4 font-medium">Sucursal</th>
                 <th className="py-2 pr-4 font-medium">Estado</th>
+                <th className="py-2 pr-4 font-medium">Accion</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr className="border-b last:border-b-0" key={user.id}>
-                  <td className="py-3 pr-4">
-                    <div className="font-medium">{user.fullName}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {user.email}
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <select
-                      className="h-8 rounded-md border bg-background px-2 text-xs outline-none disabled:opacity-60"
-                      disabled={!isWebmaster || user.id === "demo-admin"}
-                      onChange={(event) =>
-                        updateUserRole(user.id, event.target.value as RoleKey)
-                      }
-                      value={user.roleKey}
-                    >
-                      {roleKeys.map((role) => (
-                        <option key={role} value={role}>
-                          {demoRoleProfiles[role].label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="py-3 pr-4">{user.businessScope}</td>
-                  <td className="py-3 pr-4">
-                    {user.areaScope ?? allAreaScope}
-                  </td>
-                  <td className="py-3 pr-4">{user.branchScope}</td>
-                  <td className="py-3 pr-4">
-                    <Badge variant="outline">{user.status}</Badge>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {user.createdAt}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {users.map((user) => {
+                const roleOptions = Array.from(
+                  new Set([user.roleKey, ...creatableRoles]),
+                ).filter((role) => getRoleOptionsForValue(role).includes(role));
+                const canDeactivate =
+                  user.id !== "demo-admin" &&
+                  user.status !== "Inactivo" &&
+                  canInviteUser(actor, {
+                    roleKey: user.roleKey,
+                    scope: buildScopeBoundary({
+                      areaScope: user.areaScope,
+                      branchScope: user.branchScope,
+                      businessScope: user.businessScope,
+                      countryScope: user.countryScope,
+                    }),
+                  });
+
+                return (
+                  <tr className="border-b last:border-b-0" key={user.id}>
+                    <td className="py-3 pr-4">
+                      <div className="font-medium">{user.fullName}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {user.email}
+                      </div>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <select
+                        className="h-8 rounded-md border bg-background px-2 text-xs outline-none disabled:opacity-60"
+                        disabled={user.id === "demo-admin" || user.status === "Inactivo"}
+                        onChange={(event) =>
+                          updateUserRole(user.id, event.target.value as RoleKey)
+                        }
+                        value={user.roleKey}
+                      >
+                        {roleOptions.map((role) => (
+                          <option key={role} value={role}>
+                            {demoRoleProfiles[role].label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="py-3 pr-4">
+                      {getCountryScopeLabel(user.countryScope ?? allCountryScope)}
+                    </td>
+                    <td className="py-3 pr-4">
+                      {getBusinessScopeLabel(user.businessScope)}
+                    </td>
+                    <td className="py-3 pr-4">
+                      {getAreaScopeLabel(user.areaScope)}
+                    </td>
+                    <td className="py-3 pr-4">
+                      {getBranchScopeLabel(user.branchScope)}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <Badge variant="outline">{user.status}</Badge>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {user.invitationStatus
+                          ? `Invitacion: ${user.invitationStatus}`
+                          : user.createdAt}
+                      </div>
+                      {user.reassignmentRequired ? (
+                        <div className="mt-1 text-xs text-amber-700">
+                          Reasignacion requerida
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <Button
+                        disabled={!canDeactivate}
+                        onClick={() => deactivateDemoUser(user.id)}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        Desactivar
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

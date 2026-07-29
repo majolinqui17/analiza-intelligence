@@ -142,27 +142,38 @@ if (!navigation.includes("getNavigationForRole")) {
 }
 
 for (const requiredRole of [
+  "super_admin",
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
   "gerente_area",
   "gerente_sucursal",
+  "usuario_operativo",
+  "viewer",
 ]) {
   if (!navigation.includes(`"${requiredRole}"`)) {
     throw new Error(`Navigation is missing official role: ${requiredRole}`);
   }
 }
 
-if (
-  !navigation.includes(
-    'const dataUploadRoles: RoleKey[] = ["webmaster_admin", "gerente_operaciones"]',
-  )
-) {
-  throw new Error("Only webmaster/admin and operations manager should upload data.");
+for (const requiredUploadRole of [
+  "super_admin",
+  "webmaster_admin",
+  "gerente_operaciones",
+  "gerente_area",
+  "gerente_sucursal",
+]) {
+  if (!navigation.includes(`"${requiredUploadRole}"`)) {
+    throw new Error(`Upload navigation is missing: ${requiredUploadRole}`);
+  }
 }
 
-if (!navigation.includes('const adminRoles: RoleKey[] = ["webmaster_admin"]')) {
-  throw new Error("Only webmaster/admin should access admin modules.");
+if (!navigation.includes("connectorAdminRoles")) {
+  throw new Error("Connector modules should use connectorAdminRoles.");
+}
+
+if (!navigation.includes("delegatedUserAdminRoles")) {
+  throw new Error("User administration must use delegatedUserAdminRoles.");
 }
 
 const requiredKpis = [
@@ -703,10 +714,12 @@ for (const requiredBusinessText of [
 }
 
 for (const requiredUserManagementText of [
-  "Crear usuario DEMO",
-  "Usuarios creados",
+  "Invitar usuario DEMO",
+  "Invitaciones y usuarios",
   "analiza:demo-users",
-  "Solo Webmaster / Administrador puede crear usuarios y asignar roles.",
+  "Enviar invitacion",
+  "Reasignacion requerida",
+  "Tu rol solo puede invitar usuarios de nivel inferior",
 ]) {
   if (!businessModuleComponent.includes(requiredUserManagementText)) {
     throw new Error(

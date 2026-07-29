@@ -39,6 +39,7 @@ export type BranchOption = {
   id: string;
   countryId: string;
   companyId: string;
+  operationalAreaId?: string;
   code: string;
   name: string;
   city: string;
@@ -51,12 +52,29 @@ export type BranchOption = {
   isDemo: true;
 };
 
+export type OperationalAreaOption = {
+  id: string;
+  organizationId: string;
+  countryId: string;
+  companyId: string;
+  code: string;
+  name: string;
+  managerName: string;
+  areaZone: string;
+  businessLineCode: Exclude<BusinessLineCode, "CONSOLIDATED">;
+  sourceTrace: string;
+  isDemo: true;
+};
+
 export type RoleKey =
+  | "super_admin"
   | "webmaster_admin"
   | "ceo"
   | "gerente_operaciones"
   | "gerente_area"
-  | "gerente_sucursal";
+  | "gerente_sucursal"
+  | "usuario_operativo"
+  | "viewer";
 
 export const demoCountries: CountryOption[] = [
   {
@@ -308,11 +326,59 @@ function cleanOptionalManagerName(managerName: string) {
   return managerName.toLowerCase() === "no hay" ? undefined : managerName;
 }
 
+function slugifyScope(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function getOperationalAreaIdForManagedBranch(branch: ManagedBranchRecord) {
+  return [
+    "managed-area",
+    branch.countryIso2.toLowerCase(),
+    branch.businessLineCode.toLowerCase(),
+    slugifyScope(branch.areaZone),
+    slugifyScope(branch.areaManagerName),
+  ].join("-");
+}
+
+export const demoOperationalAreas: OperationalAreaOption[] = Array.from(
+  managedBranchRecords
+    .reduce((areas, branch) => {
+      const id = getOperationalAreaIdForManagedBranch(branch);
+
+      if (!areas.has(id)) {
+        areas.set(id, {
+          id,
+          organizationId: "10000000-0000-4000-8000-000000000001",
+          countryId: getCountryIdForManagedBranch(branch.countryIso2),
+          companyId: getCompanyIdForManagedBranch(branch.businessLineCode),
+          code: id.replace("managed-area-", "").toUpperCase(),
+          name: `${branch.areaZone} - ${branch.areaManagerName}`,
+          managerName: branch.areaManagerName,
+          areaZone: branch.areaZone,
+          businessLineCode: branch.businessLineCode,
+          sourceTrace: branch.sourceTrace,
+          isDemo: true,
+        });
+      }
+
+      return areas;
+    }, new Map<string, OperationalAreaOption>())
+    .values(),
+).sort((firstArea, secondArea) =>
+  firstArea.name.localeCompare(secondArea.name),
+);
+
 export const managedDemoBranches: BranchOption[] = managedBranchRecords.map(
   (branch) => ({
     id: branch.id,
     countryId: getCountryIdForManagedBranch(branch.countryIso2),
     companyId: getCompanyIdForManagedBranch(branch.businessLineCode),
+    operationalAreaId: getOperationalAreaIdForManagedBranch(branch),
     code: branch.id.replace("managed-", "").toUpperCase(),
     name: branch.branchName,
     city: branch.areaZone,
@@ -338,11 +404,13 @@ export const demoBranches: BranchOption[] = [
 ];
 
 export const roleKeys: RoleKey[] = [
-  "webmaster_admin",
+  "super_admin",
   "ceo",
   "gerente_operaciones",
   "gerente_area",
   "gerente_sucursal",
+  "usuario_operativo",
+  "viewer",
 ];
 
 export const demoRoleProfiles: Record<
@@ -353,10 +421,16 @@ export const demoRoleProfiles: Record<
     accessSummary: string;
   }
 > = {
-  webmaster_admin: {
-    label: "Webmaster / Administrador",
+  super_admin: {
+    label: "Superadministrador",
     description:
-      "Disena dashboards, configura modulos, crea usuarios y asigna roles.",
+      "Administra la plataforma completa, permisos globales, conectores y gobierno del BI.",
+    accessSummary: "Acceso total al sistema Analiza BI.",
+  },
+  webmaster_admin: {
+    label: "Webmaster / Administrador legacy",
+    description:
+      "Alias historico del superadministrador para compatibilidad de sesiones existentes.",
     accessSummary: "Acceso total al sistema Analiza BI.",
   },
   ceo: {
@@ -382,6 +456,18 @@ export const demoRoleProfiles: Record<
     description:
       "Registra y consulta el cierre mensual de su sucursal asignada.",
     accessSummary: "Formulario mensual y lectura de su sucursal.",
+  },
+  usuario_operativo: {
+    label: "Usuario operativo",
+    description:
+      "Carga y corrige datos operativos sin privilegios gerenciales.",
+    accessSummary: "Trabajo operativo limitado a su asignacion.",
+  },
+  viewer: {
+    label: "Viewer",
+    description:
+      "Consulta informacion autorizada sin permisos de modificacion.",
+    accessSummary: "Solo lectura dentro de su alcance.",
   },
 };
 

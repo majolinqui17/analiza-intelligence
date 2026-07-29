@@ -68,18 +68,23 @@ export type KpiRegistryItem = {
 };
 
 const executiveRoles: RoleKey[] = [
+  "super_admin",
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
   "gerente_area",
   "gerente_sucursal",
+  "usuario_operativo",
+  "viewer",
 ];
 
 const operatorRoles: RoleKey[] = [
+  "super_admin",
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
   "gerente_area",
+  "gerente_sucursal",
 ];
 
 export const kpiRegistry: KpiRegistryItem[] = [

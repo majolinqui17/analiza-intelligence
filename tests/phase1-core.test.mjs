@@ -54,11 +54,14 @@ for (const fn of requiredFunctions) {
 }
 
 const roleKeys = [
+  "super_admin",
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
   "gerente_area",
   "gerente_sucursal",
+  "usuario_operativo",
+  "viewer",
 ];
 
 for (const roleKey of roleKeys) {
@@ -101,10 +104,13 @@ if (!signUpPage.includes("Crear cuenta")) {
 }
 
 for (const requiredRoleText of [
-  "Webmaster / Administrador",
+  "Superadministrador",
   "CEO",
   "Gerente de operaciones",
+  "Gerente de area",
   "Gerente de sucursal",
+  "Usuario operativo",
+  "Viewer",
 ]) {
   if (!signUpPage.includes(requiredRoleText) && !seed.includes(requiredRoleText)) {
     throw new Error(`Missing four-role model text: ${requiredRoleText}`);

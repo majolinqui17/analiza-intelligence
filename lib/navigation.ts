@@ -32,16 +32,20 @@ export type NavigationItem = {
 };
 
 const allRoles: RoleKey[] = [
+  "super_admin",
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
   "gerente_area",
   "gerente_sucursal",
+  "usuario_operativo",
+  "viewer",
 ];
 
-const executiveRoles: RoleKey[] = ["webmaster_admin", "ceo"];
+const executiveRoles: RoleKey[] = ["super_admin", "webmaster_admin", "ceo"];
 
 const operationsRoles: RoleKey[] = [
+  "super_admin",
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
@@ -50,6 +54,7 @@ const operationsRoles: RoleKey[] = [
 ];
 
 const businessLineRoles: RoleKey[] = [
+  "super_admin",
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
@@ -57,17 +62,34 @@ const businessLineRoles: RoleKey[] = [
   "gerente_sucursal",
 ];
 
-const dataUploadRoles: RoleKey[] = ["webmaster_admin", "gerente_operaciones"];
+const dataUploadRoles: RoleKey[] = [
+  "super_admin",
+  "webmaster_admin",
+  "gerente_operaciones",
+  "gerente_area",
+  "gerente_sucursal",
+];
 
 const dataReadRoles: RoleKey[] = [
+  "super_admin",
   "webmaster_admin",
   "ceo",
   "gerente_operaciones",
   "gerente_area",
   "gerente_sucursal",
+  "usuario_operativo",
+  "viewer",
 ];
 
-const adminRoles: RoleKey[] = ["webmaster_admin"];
+const connectorAdminRoles: RoleKey[] = ["super_admin", "webmaster_admin"];
+
+const delegatedUserAdminRoles: RoleKey[] = [
+  "super_admin",
+  "webmaster_admin",
+  "gerente_operaciones",
+  "gerente_area",
+  "gerente_sucursal",
+];
 
 export const navigationItems: NavigationItem[] = [
   {
@@ -164,7 +186,7 @@ export const navigationItems: NavigationItem[] = [
     title: "Conectores",
     href: "/protected/conectores",
     icon: DatabaseZap,
-    allowedRoles: adminRoles,
+    allowedRoles: connectorAdminRoles,
   },
   {
     title: "Calidad de datos",
@@ -182,7 +204,7 @@ export const navigationItems: NavigationItem[] = [
     title: "Usuarios y permisos",
     href: "/protected/usuarios-permisos",
     icon: KeyRound,
-    allowedRoles: adminRoles,
+    allowedRoles: delegatedUserAdminRoles,
   },
   {
     title: "Mi cuenta",

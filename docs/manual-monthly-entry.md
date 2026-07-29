@@ -16,11 +16,16 @@ La via manual principal para actualizar Analiza Intelligence sera un formulario 
 
 ## Roles y jerarquia
 
-- `webmaster_admin`: crea usuarios, asigna roles y autoriza reemplazos de cierres publicados.
+- `super_admin`: gobierna permisos globales, conectores, auditoria y seguridad del sistema.
+- `webmaster_admin`: alias historico de administrador DEMO, conservado por compatibilidad.
 - `ceo`: consulta resultados ejecutivos y decide metas finales.
-- `gerente_operaciones`: gestiona una linea de negocio y valida los cierres de su linea.
-- `gerente_area`: supervisa el grupo de sucursales asignadas y compara disciplina, puntualidad y calidad.
+- `gerente_operaciones`: crea sucursales, crea areas operativas, asigna sucursales a areas y valida cierres dentro de su alcance.
+- `gerente_area`: crea o sustituye gerentes de sucursal solo dentro de sus areas, supervisa el grupo de sucursales asignadas y compara disciplina, puntualidad y calidad.
 - `gerente_sucursal`: llena el cierre mensual de su sucursal y consulta sus resultados.
+- `usuario_operativo`: ayuda con carga o correccion de datos de su sucursal cuando tenga permiso.
+- `viewer`: solo consulta la informacion autorizada.
+
+El acceso siempre debe evaluar organizacion, pais, empresa, area operativa, sucursal y rol. Un rol valido sin alcance valido no debe permitir ver ni editar datos.
 
 ## Historial
 

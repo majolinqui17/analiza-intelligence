@@ -8,6 +8,7 @@ All primary identifiers use UUID. Operational and analytic records include these
 - `country_id`
 - `company_id`
 - `branch_id`
+- `operational_area_id`
 - `source_id`
 - `import_id`
 - `created_at`
@@ -31,7 +32,38 @@ The initial DEMO seed is:
 supabase/seed.sql
 ```
 
-The seed includes the seven initial countries, three business units, sample DEMO branches, roles, and baseline permissions. It does not create real users.
+The seed includes the seven initial countries, three business units, sample DEMO branches, the delegated Analiza roles, role hierarchy, and baseline permissions. It does not create real users.
+
+## Delegated Organization Migration
+
+The hierarchy and user delegation migration is:
+
+```text
+supabase/migrations/20260729000200_delegated_user_hierarchy.sql
+```
+
+It adds the operational hierarchy required for Analiza BI:
+
+- `operational_areas`
+- `area_branch_assignments`
+- `manager_assignments`
+- `reporting_lines`
+- `user_invitations`
+- `role_hierarchy`
+- `permission_delegations`
+- `assignment_history`
+
+Authorization is not role-only. Policies evaluate `organization_id`, `country_id`, `company_id`, `operational_area_id`, `branch_id`, and `role_id`.
+
+Branch lifecycle states are:
+
+- `draft`
+- `pending_manager`
+- `active`
+- `temporarily_closed`
+- `inactive`
+
+New branches default to `pending_manager`; existing branches may remain active after migration. A branch should move to `active` only after its operational area, manager assignment, and setup are complete.
 
 ## Phase 3 Operational Migration
 

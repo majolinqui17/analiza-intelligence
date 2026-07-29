@@ -47,7 +47,7 @@ Before deployment:
 
 The current `npm run build` command uses `next build --webpack` so local and CI builds do not depend on Turbopack internals that may require restricted process or port behavior in sandboxed environments. This is reversible when the target deployment environment supports Turbopack builds reliably.
 
-## First Super Admin
+## First Superadministrator
 
 The first `super_admin` should be created by a controlled server-side or SQL process after Supabase Auth user creation. This process must not expose service role keys in browser code.
 
@@ -57,3 +57,5 @@ Required steps:
 2. Insert or update `public.profiles` with the Auth user id and organization id.
 3. Insert the `super_admin` role into `public.user_roles`.
 4. Confirm RLS access with a non-service-role session.
+
+`webmaster_admin` remains available as a legacy level-100 alias for existing DEMO sessions, but new installations should start with `super_admin`.

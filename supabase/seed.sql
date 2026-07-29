@@ -70,7 +70,6 @@ on conflict (organization_id, country_id, company_id, code) do update set
 
 delete from public.roles
 where key in (
-  'super_admin',
   'director_ejecutivo_grupo',
   'director_pais',
   'director_empresa',
@@ -78,20 +77,41 @@ where key in (
   'director_operaciones',
   'analista_bi',
   'cargador_datos',
-  'auditor',
-  'viewer'
+  'auditor'
 );
 
 insert into public.roles (id, key, name, description)
 values
+  ('60000000-0000-4000-8000-000000000000', 'super_admin', 'Superadministrador', 'Administra la plataforma completa, permisos globales y gobierno del BI.'),
   ('60000000-0000-4000-8000-000000000001', 'webmaster_admin', 'Webmaster / Administrador', 'Disena dashboards, configura modulos, crea usuarios y asigna roles.'),
   ('60000000-0000-4000-8000-000000000002', 'ceo', 'CEO', 'Consulta la salud ejecutiva de Analiza y sus lineas de negocio.'),
   ('60000000-0000-4000-8000-000000000003', 'gerente_operaciones', 'Gerente de operaciones', 'Gestiona una linea de negocio y carga plantillas de sucursales.'),
   ('60000000-0000-4000-8000-000000000004', 'gerente_sucursal', 'Gerente de sucursal', 'Registra y consulta resultados de su sucursal asignada.'),
-  ('60000000-0000-4000-8000-000000000005', 'gerente_area', 'Gerente de area', 'Supervisa un grupo de sucursales asignadas y valida disciplina de carga.')
+  ('60000000-0000-4000-8000-000000000005', 'gerente_area', 'Gerente de area', 'Supervisa un grupo de sucursales asignadas y valida disciplina de carga.'),
+  ('60000000-0000-4000-8000-000000000006', 'usuario_operativo', 'Usuario operativo', 'Carga y corrige datos operativos sin privilegios gerenciales.'),
+  ('60000000-0000-4000-8000-000000000007', 'viewer', 'Viewer', 'Consulta informacion autorizada sin permisos de modificacion.')
 on conflict (key) do update set
   name = excluded.name,
   description = excluded.description;
+
+insert into public.role_hierarchy (role_id, role_key, hierarchy_level, can_invite)
+select r.id, r.key, hierarchy.hierarchy_level, hierarchy.can_invite
+from (
+  values
+    ('super_admin', 100, true),
+    ('webmaster_admin', 100, true),
+    ('gerente_operaciones', 80, true),
+    ('gerente_area', 60, true),
+    ('gerente_sucursal', 40, true),
+    ('usuario_operativo', 20, false),
+    ('viewer', 10, false)
+) as hierarchy(role_key, hierarchy_level, can_invite)
+join public.roles r on r.key = hierarchy.role_key
+on conflict (role_id) do update set
+  role_key = excluded.role_key,
+  hierarchy_level = excluded.hierarchy_level,
+  can_invite = excluded.can_invite,
+  updated_at = now();
 
 insert into public.permissions (id, key, name, description)
 values
@@ -101,7 +121,13 @@ values
   ('70000000-0000-4000-8000-000000000004', 'audit.read', 'Leer auditoria', 'Consultar trazabilidad e historial.'),
   ('70000000-0000-4000-8000-000000000005', 'dashboards.read', 'Leer dashboards', 'Consultar indicadores autorizados.'),
   ('70000000-0000-4000-8000-000000000006', 'dashboards.manage', 'Gestionar dashboards', 'Disenar y publicar dashboards del sistema.'),
-  ('70000000-0000-4000-8000-000000000007', 'users.manage', 'Gestionar usuarios', 'Crear usuarios y asignar roles y alcances.')
+  ('70000000-0000-4000-8000-000000000007', 'users.manage', 'Gestionar usuarios', 'Crear usuarios y asignar roles y alcances.'),
+  ('70000000-0000-4000-8000-000000000008', 'users.invite', 'Invitar usuarios', 'Crear usuarios por invitacion sin definir contrasenas manuales.'),
+  ('70000000-0000-4000-8000-000000000009', 'areas.manage', 'Gestionar areas operativas', 'Crear areas, regiones operativas y asignar responsables.'),
+  ('70000000-0000-4000-8000-000000000010', 'branches.manage', 'Gestionar sucursales', 'Crear sucursales y asignarlas a areas operativas.'),
+  ('70000000-0000-4000-8000-000000000011', 'subordinates.deactivate', 'Desactivar subordinados', 'Aplicar baja logica y exigir reasignacion cuando corresponda.'),
+  ('70000000-0000-4000-8000-000000000012', 'goals.manage', 'Gestionar metas', 'Administrar metas y capacidad dentro del alcance autorizado.'),
+  ('70000000-0000-4000-8000-000000000013', 'capacity.manage', 'Gestionar capacidad', 'Administrar capacidad, horarios y profesionales de sucursal.')
 on conflict (key) do update set
   name = excluded.name,
   description = excluded.description;
@@ -110,7 +136,7 @@ insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
 from public.roles r
 cross join public.permissions p
-where r.key = 'webmaster_admin'
+where r.key in ('super_admin', 'webmaster_admin')
 on conflict do nothing;
 
 insert into public.role_permissions (role_id, permission_id)
@@ -130,7 +156,39 @@ on conflict do nothing;
 insert into public.role_permissions (role_id, permission_id)
 select r.id, p.id
 from public.roles r
+join public.permissions p on p.key in (
+  'context.read',
+  'dashboards.read',
+  'imports.manage',
+  'users.invite',
+  'areas.manage',
+  'branches.manage',
+  'subordinates.deactivate',
+  'goals.manage',
+  'capacity.manage'
+)
+where r.key = 'gerente_operaciones'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
 join public.permissions p on p.key in ('context.read', 'dashboards.read', 'imports.manage')
+where r.key = 'gerente_area'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.key in (
+  'context.read',
+  'dashboards.read',
+  'imports.manage',
+  'users.invite',
+  'subordinates.deactivate',
+  'goals.manage',
+  'capacity.manage'
+)
 where r.key = 'gerente_area'
 on conflict do nothing;
 
@@ -139,6 +197,33 @@ select r.id, p.id
 from public.roles r
 join public.permissions p on p.key in ('context.read', 'dashboards.read', 'imports.manage')
 where r.key = 'gerente_sucursal'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.key in (
+  'context.read',
+  'dashboards.read',
+  'imports.manage',
+  'users.invite',
+  'capacity.manage'
+)
+where r.key = 'gerente_sucursal'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.key in ('context.read', 'dashboards.read', 'imports.manage')
+where r.key = 'usuario_operativo'
+on conflict do nothing;
+
+insert into public.role_permissions (role_id, permission_id)
+select r.id, p.id
+from public.roles r
+join public.permissions p on p.key in ('context.read', 'dashboards.read')
+where r.key = 'viewer'
 on conflict do nothing;
 
 insert into public.branch_managers (id, organization_id, branch_id, display_name, email, is_demo, starts_on)
