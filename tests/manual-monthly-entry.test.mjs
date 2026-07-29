@@ -20,6 +20,8 @@ const importDashboard = readWorkspaceFile(
   "components/import-operations-dashboard.tsx",
 );
 const importOperations = readWorkspaceFile("lib/analytics/import-operations.ts");
+const modulePage = readWorkspaceFile("app/protected/[module]/page.tsx");
+const navigation = readWorkspaceFile("lib/navigation.ts");
 const packageJson = readWorkspaceFile("package.json");
 const documentationExists = existsSync(join(root, "docs/manual-monthly-entry.md"));
 
@@ -43,6 +45,16 @@ assert(
 assert(
   importDashboard.includes("ManualMonthlyEntryDashboard"),
   "Import operations must render the manual monthly dashboard.",
+);
+assert(
+  modulePage.includes('module === "plantillas"') &&
+    modulePage.includes("ManualMonthlyEntryDashboard"),
+  "The Plantillas route must render the manual monthly dashboard.",
+);
+assert(
+  navigation.includes('title: "Formulario mensual"') &&
+    navigation.includes('href: "/protected/plantillas"'),
+  "Navigation must expose the monthly form where Plantillas used to be.",
 );
 assert(
   importOperations.includes("manualMonthlyFormSteps") &&

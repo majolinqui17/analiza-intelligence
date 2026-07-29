@@ -7,7 +7,6 @@ import {
   CalendarClock,
   ClipboardCheck,
   DatabaseZap,
-  FileSpreadsheet,
   FlaskConical,
   Gauge,
   Goal,
@@ -152,9 +151,9 @@ export const navigationItems: NavigationItem[] = [
     allowedRoles: dataUploadRoles,
   },
   {
-    title: "Plantillas",
+    title: "Formulario mensual",
     href: "/protected/plantillas",
-    icon: FileSpreadsheet,
+    icon: ClipboardCheck,
     allowedRoles: dataReadRoles,
   },
   {

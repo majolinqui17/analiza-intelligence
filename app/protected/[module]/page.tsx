@@ -8,7 +8,7 @@ import {
 } from "@/components/operations-modules";
 import { ImportOperationsDashboard } from "@/components/import-operations-dashboard";
 import { GoalsAdvancesDashboard } from "@/components/goals-advances-dashboard";
-import { TemplateLibraryDashboard } from "@/components/template-library-dashboard";
+import { ManualMonthlyEntryDashboard } from "@/components/manual-monthly-entry-dashboard";
 import { Badge } from "@/components/ui/badge";
 import { navigationItems } from "@/lib/navigation";
 
@@ -43,7 +43,11 @@ export default async function ModulePage({ params }: ModulePageProps) {
   }
 
   if (module === "plantillas") {
-    return <TemplateLibraryDashboard />;
+    return (
+      <section className="flex w-full flex-col gap-6 px-4 py-6 lg:px-6">
+        <ManualMonthlyEntryDashboard />
+      </section>
+    );
   }
 
   if (module === "conectores") {
