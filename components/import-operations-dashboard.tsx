@@ -25,6 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ManualMonthlyEntryDashboard } from "@/components/manual-monthly-entry-dashboard";
 import {
   bulkImportDocuments,
   buildCsvTemplate,
@@ -791,10 +792,10 @@ function PipelineSection() {
       <div className="mb-4 grid gap-1">
         <div className="flex items-center gap-2 text-sm font-medium">
           <Workflow className="size-4 text-primary" />
-          Flujo de actualizacion de documentos
+          Flujo de actualizacion mensual
         </div>
         <p className="text-xs leading-5 text-muted-foreground">
-          Ningun archivo cambia los dashboards hasta pasar validacion, vista
+          Ningun cierre cambia los dashboards hasta pasar validacion, vista
           previa y publicacion con auditoria.
         </p>
       </div>
@@ -878,8 +879,8 @@ function GovernanceSection() {
           Seguridad
         </div>
         <p className="text-xs leading-5">
-          Los archivos se validan en servidor, con extension y tamano
-          restringidos, nombre saneado y formulas peligrosas bloqueadas.
+          Los formularios y respaldos Excel se validan en servidor. No deben
+          guardar pacientes identificables ni publicar datos incompletos.
         </p>
       </article>
       <article className="rounded-md border border-blue-200 bg-blue-50 p-4 text-blue-900">
@@ -924,7 +925,7 @@ export function ImportOperationsDashboard() {
     Record<string, BulkImportStatus>
   >({});
   const [notice, setNotice] = useState(
-    "Selecciona una linea y un documento para cargar datos DEMO sin conectores.",
+    "El formulario mensual es la via manual principal. Excel queda como respaldo para migraciones o correcciones especiales.",
   );
 
   useEffect(() => {
@@ -1111,13 +1112,15 @@ export function ImportOperationsDashboard() {
             </h1>
             <p className="max-w-4xl text-sm leading-6 text-muted-foreground">
               Centro para mantener Analiza actualizado mientras no existan
-              conectores: cargas masivas por linea de negocio, validacion,
-              versionado, auditoria y fallback por documento.
+              conectores: formulario mensual por linea de negocio, validacion,
+              historial, auditoria y respaldo por documento cuando sea necesario.
             </p>
           </div>
         </div>
         <ScopeCard context={context} selectedLine={selectedLine} />
       </div>
+
+      <ManualMonthlyEntryDashboard />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
@@ -1155,7 +1158,7 @@ export function ImportOperationsDashboard() {
       <div className="grid gap-3 lg:grid-cols-2">
         <ModeButton
           active={activeMode === "Carga masiva"}
-          description="Para los gerentes de operaciones: subir Excel/CSV por negocio, sucursal y periodo cuando aun no hay API."
+          description="Uso excepcional: subir Excel/CSV solo para migraciones, reemplazos o datos que todavia no entran al formulario."
           icon={FileUp}
           label="Carga masiva"
           onClick={() => setActiveMode("Carga masiva")}

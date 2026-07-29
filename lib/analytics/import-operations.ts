@@ -107,6 +107,69 @@ export type ImportCoverageSummary = {
   nextDueAt: string;
 };
 
+export type ManualMonthlyFormInputType =
+  | "currency"
+  | "date"
+  | "month"
+  | "number"
+  | "percent"
+  | "text";
+
+export type ManualMonthlyFormField = {
+  id: string;
+  label: string;
+  description: string;
+  inputType: ManualMonthlyFormInputType;
+  unit: string;
+  required: boolean;
+  placeholder: string;
+  appliesTo: ImportBusinessLine[];
+  min?: number;
+  max?: number;
+};
+
+export type ManualMonthlyFormStep = {
+  id: string;
+  title: string;
+  description: string;
+  ownerNote: string;
+  fields: ManualMonthlyFormField[];
+};
+
+export type ManualMonthlySubmissionStatus =
+  | "Borrador DEMO"
+  | "Publicado DEMO"
+  | "Bloqueado por calidad DEMO";
+
+export type ManualMonthlyHistoryEntry = {
+  id: string;
+  businessLine: ImportBusinessLine;
+  branch: string;
+  period: string;
+  manager: string;
+  netRevenue: number;
+  revenueTarget: number;
+  grossMarginRate: number;
+  effectiveOccupancyRate: number;
+  activityVolume: number;
+  dataQualityScore: number;
+  status: ManualMonthlySubmissionStatus;
+  sourceTrace: string;
+  createdAt: string;
+  demoFlag: true;
+};
+
+export type ManualMonthlyHistorySummary = {
+  totalEntries: number;
+  publishedEntries: number;
+  lastPeriod: string;
+  lastNetRevenue: number;
+  averageMarginRate: number;
+  averageOccupancyRate: number;
+  averageDataQualityScore: number;
+  qualityWarnings: number;
+};
+
 const sharedTargetModules = [
   "Resumen ejecutivo",
   "Operacion ejecutiva",
@@ -114,6 +177,12 @@ const sharedTargetModules = [
   "Insights",
   "Metas y avances",
   "Calidad de datos",
+];
+
+const manualOperationalLines: ImportBusinessLine[] = [
+  "Laboratorio",
+  "Fisioterapia",
+  "Imagenes",
 ];
 
 export const bulkImportDocuments: BulkImportDocument[] = [
@@ -894,35 +963,35 @@ export const connectorPlans: ConnectorPlan[] = [
 
 export const importPipelineSteps: ImportPipelineStep[] = [
   {
-    id: "download",
-    label: "1. Descargar estructura",
-    owner: "Webmaster / Administrador",
-    description:
-      "El sistema entrega la estructura oficial para evitar columnas ambiguas o datos mezclados.",
-    gate: "La plantilla incluye campos obligatorios, ejemplo DEMO y version.",
-  },
-  {
-    id: "prepare",
-    label: "2. Preparar archivo",
+    id: "select-scope",
+    label: "1. Seleccionar linea y periodo",
     owner: "Gerente de operaciones",
     description:
-      "Cada gerente carga datos por linea, sucursal y periodo; los datos sensibles se seudonimizan.",
-    gate: "Sin pacientes identificables ni formulas peligrosas.",
+      "El cierre mensual queda amarrado a linea de negocio, sucursal, pais y periodo antes de capturar datos.",
+    gate: "Sin linea activa no se puede publicar el cierre.",
   },
   {
-    id: "upload",
-    label: "3. Cargar masivo",
+    id: "fill-form",
+    label: "2. Llenar formulario mensual",
     owner: "Gerente de operaciones",
     description:
-      "El archivo entra a una zona de espera y aun no cambia ningun dashboard ejecutivo.",
-    gate: "Extension permitida, tamano permitido y nombre saneado.",
+      "El gerente captura resultados, citas, capacidad, costos, margen y calidad en pasos cortos.",
+    gate: "Sin pacientes identificables y sin campos obligatorios vacios.",
+  },
+  {
+    id: "save-progress",
+    label: "3. Guardar avance",
+    owner: "Gerente de operaciones",
+    description:
+      "El avance queda en historial DEMO del periodo y aun no cambia ningun dashboard ejecutivo real.",
+    gate: "Trazabilidad con fuente, linea, sucursal, periodo y usuario.",
   },
   {
     id: "validate",
     label: "4. Validar en servidor",
     owner: "Sistema",
     description:
-      "Se revisan columnas, duplicados, fechas, sucursales, unidades, costos, estados y reglas por negocio.",
+      "Se revisan duplicados, fechas, sucursales, unidades, costos, estados, coherencia y calidad.",
     gate: "Sin errores bloqueantes. Advertencias visibles antes de publicar.",
   },
   {
@@ -946,7 +1015,7 @@ export const importPipelineSteps: ImportPipelineStep[] = [
     label: "7. Reemplazar si hay correccion",
     owner: "Webmaster / Administrador",
     description:
-      "Una nueva carga no borra el historico: reemplaza la version activa y archiva la anterior.",
+      "Una nueva captura no borra el historico: reemplaza la version activa y archiva la anterior.",
     gate: "Motivo obligatorio y periodo desbloqueado o aprobacion especial.",
   },
 ];
@@ -996,6 +1065,580 @@ export const importBatchRuns: ImportBatchRun[] = [
   },
 ];
 
+export const manualMonthlyFormSteps: ManualMonthlyFormStep[] = [
+  {
+    id: "contexto-cierre",
+    title: "Contexto del cierre",
+    description:
+      "Identifica periodo, sucursal, gerente y fecha de corte antes de guardar datos historicos.",
+    ownerNote:
+      "Responsable: gerente de operaciones o gerente de sucursal con datos anonimos.",
+    fields: [
+      {
+        id: "period",
+        label: "Mes reportado",
+        description: "Mes que se cerrara para alimentar dashboards e Insights.",
+        inputType: "month",
+        unit: "mes",
+        required: true,
+        placeholder: "2026-07",
+        appliesTo: manualOperationalLines,
+      },
+      {
+        id: "branch_reported",
+        label: "Sucursal reportada",
+        description: "Sucursal que entrega el cierre mensual.",
+        inputType: "text",
+        unit: "sucursal",
+        required: true,
+        placeholder: "Aguilares",
+        appliesTo: manualOperationalLines,
+      },
+      {
+        id: "manager_name",
+        label: "Gerente responsable",
+        description: "Responsable interno que firma el cierre operativo.",
+        inputType: "text",
+        unit: "responsable",
+        required: true,
+        placeholder: "Nombre del gerente",
+        appliesTo: manualOperationalLines,
+      },
+      {
+        id: "data_cutoff_date",
+        label: "Fecha de corte",
+        description: "Ultimo dia incluido en el cierre mensual.",
+        inputType: "date",
+        unit: "fecha",
+        required: true,
+        placeholder: "2026-07-31",
+        appliesTo: manualOperationalLines,
+      },
+    ],
+  },
+  {
+    id: "resultados-comerciales",
+    title: "Resultados comerciales",
+    description:
+      "Recoge ventas, metas, pacientes y ticket para medir desempeno real por negocio.",
+    ownerNote:
+      "AnaliA compara estos valores contra meta, meses anteriores y linea seleccionada.",
+    fields: [
+      {
+        id: "gross_revenue",
+        label: "Ingreso bruto",
+        description: "Venta total antes de descuentos, anulaciones o notas.",
+        inputType: "currency",
+        unit: "USD",
+        required: true,
+        placeholder: "0.00",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "net_revenue",
+        label: "Ingreso neto",
+        description: "Ingreso que realmente alimenta margen y avance de meta.",
+        inputType: "currency",
+        unit: "USD",
+        required: true,
+        placeholder: "0.00",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "revenue_target",
+        label: "Meta de ingreso",
+        description: "Meta final aprobada para el mes y sucursal.",
+        inputType: "currency",
+        unit: "USD",
+        required: true,
+        placeholder: "0.00",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "patients_total",
+        label: "Pacientes atendidos",
+        description: "Conteo anonimo de pacientes o clientes atendidos.",
+        inputType: "number",
+        unit: "pacientes",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "ticket_average",
+        label: "Ticket promedio",
+        description: "Promedio de ingreso por paciente, orden, sesion o estudio.",
+        inputType: "currency",
+        unit: "USD",
+        required: true,
+        placeholder: "0.00",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+    ],
+  },
+  {
+    id: "operacion-citas",
+    title: "Operacion y citas",
+    description:
+      "Separa volumen realizado, estados de citas y atrasos para explicar la operacion.",
+    ownerNote:
+      "Estos datos alimentan Operacion ejecutiva, Citas por negocio y alertas tempranas.",
+    fields: [
+      {
+        id: "appointments_completed",
+        label: "Citas completadas",
+        description: "Citas que llegaron a atencion o servicio realizado.",
+        inputType: "number",
+        unit: "citas",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "appointments_no_show",
+        label: "No-show",
+        description: "Citas en las que el paciente no se presento.",
+        inputType: "number",
+        unit: "citas",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "appointments_cancelled",
+        label: "Canceladas",
+        description: "Citas canceladas antes del servicio.",
+        inputType: "number",
+        unit: "citas",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "sla_on_time_rate",
+        label: "Cumplimiento SLA",
+        description: "Porcentaje de atenciones, informes o entregas dentro del tiempo esperado.",
+        inputType: "percent",
+        unit: "%",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+        max: 100,
+      },
+      {
+        id: "lab_orders",
+        label: "Ordenes procesadas",
+        description: "Ordenes de laboratorio cerradas en el mes.",
+        inputType: "number",
+        unit: "ordenes",
+        required: true,
+        placeholder: "0",
+        appliesTo: ["Laboratorio"],
+        min: 0,
+      },
+      {
+        id: "lab_tests",
+        label: "Pruebas realizadas",
+        description: "Pruebas o muestras procesadas por laboratorio.",
+        inputType: "number",
+        unit: "pruebas",
+        required: true,
+        placeholder: "0",
+        appliesTo: ["Laboratorio"],
+        min: 0,
+      },
+      {
+        id: "therapy_sessions",
+        label: "Sesiones realizadas",
+        description: "Sesiones de fisioterapia completadas.",
+        inputType: "number",
+        unit: "sesiones",
+        required: true,
+        placeholder: "0",
+        appliesTo: ["Fisioterapia"],
+        min: 0,
+      },
+      {
+        id: "active_treatment_plans",
+        label: "Planes activos",
+        description: "Planes terapeuticos activos al cierre del mes.",
+        inputType: "number",
+        unit: "planes",
+        required: true,
+        placeholder: "0",
+        appliesTo: ["Fisioterapia"],
+        min: 0,
+      },
+      {
+        id: "imaging_studies",
+        label: "Estudios realizados",
+        description: "Estudios de imagen realizados por modalidad o sucursal.",
+        inputType: "number",
+        unit: "estudios",
+        required: true,
+        placeholder: "0",
+        appliesTo: ["Imagenes"],
+        min: 0,
+      },
+      {
+        id: "reports_pending",
+        label: "Informes pendientes",
+        description: "Informes diagnosticos pendientes al cierre.",
+        inputType: "number",
+        unit: "informes",
+        required: true,
+        placeholder: "0",
+        appliesTo: ["Imagenes"],
+        min: 0,
+      },
+    ],
+  },
+  {
+    id: "capacidad-equipo",
+    title: "Capacidad y equipo",
+    description:
+      "Mide cuanto recurso disponible se uso y cuanto se perdio por espera, agenda o equipo.",
+    ownerNote:
+      "La ocupacion efectiva no se publica si faltan horas disponibles o usadas.",
+    fields: [
+      {
+        id: "available_hours",
+        label: "Horas disponibles",
+        description: "Capacidad disponible del mes por sucursal, equipo o profesional.",
+        inputType: "number",
+        unit: "horas",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "used_hours",
+        label: "Horas utilizadas",
+        description: "Horas realmente usadas para servicios completados.",
+        inputType: "number",
+        unit: "horas",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "effective_occupancy_rate",
+        label: "Ocupacion efectiva",
+        description: "Porcentaje real de capacidad usada.",
+        inputType: "percent",
+        unit: "%",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+        max: 100,
+      },
+      {
+        id: "lost_capacity_hours",
+        label: "Horas de capacidad perdida",
+        description: "Horas perdidas por cancelaciones, equipo fuera de servicio o brechas de agenda.",
+        inputType: "number",
+        unit: "horas",
+        required: false,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "equipment_downtime_hours",
+        label: "Horas fuera de servicio",
+        description: "Tiempo muerto por equipo o mantenimiento.",
+        inputType: "number",
+        unit: "horas",
+        required: true,
+        placeholder: "0",
+        appliesTo: ["Imagenes", "Laboratorio"],
+        min: 0,
+      },
+      {
+        id: "therapist_hours",
+        label: "Horas terapeutas",
+        description: "Horas disponibles del equipo terapeutico.",
+        inputType: "number",
+        unit: "horas",
+        required: true,
+        placeholder: "0",
+        appliesTo: ["Fisioterapia"],
+        min: 0,
+      },
+    ],
+  },
+  {
+    id: "costos-margen",
+    title: "Costos y margen",
+    description:
+      "Permite separar costo directo, gasto fijo, gasto variable y margen por linea.",
+    ownerNote:
+      "Finanzas y operaciones deben poder reconciliar estos campos antes de publicar.",
+    fields: [
+      {
+        id: "direct_costs",
+        label: "Costos directos",
+        description: "Costos asociados directamente a producir los servicios.",
+        inputType: "currency",
+        unit: "USD",
+        required: true,
+        placeholder: "0.00",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "fixed_costs",
+        label: "Gastos fijos",
+        description: "Gastos que no cambian proporcionalmente con el volumen mensual.",
+        inputType: "currency",
+        unit: "USD",
+        required: true,
+        placeholder: "0.00",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "variable_costs",
+        label: "Gastos variables",
+        description: "Gastos que suben o bajan segun volumen, compras o demanda.",
+        inputType: "currency",
+        unit: "USD",
+        required: true,
+        placeholder: "0.00",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "gross_margin_rate",
+        label: "Margen bruto",
+        description: "Margen porcentual despues de costos directos.",
+        inputType: "percent",
+        unit: "%",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+        max: 100,
+      },
+      {
+        id: "reactive_cost",
+        label: "Costo de reactivos",
+        description: "Costo de reactivos consumidos en el mes.",
+        inputType: "currency",
+        unit: "USD",
+        required: true,
+        placeholder: "0.00",
+        appliesTo: ["Laboratorio"],
+        min: 0,
+      },
+      {
+        id: "urgent_purchase_cost",
+        label: "Compras urgentes",
+        description: "Compras de emergencia que presionan margen.",
+        inputType: "currency",
+        unit: "USD",
+        required: false,
+        placeholder: "0.00",
+        appliesTo: ["Laboratorio", "Imagenes"],
+        min: 0,
+      },
+      {
+        id: "maintenance_cost",
+        label: "Mantenimiento e insumos",
+        description: "Costos de equipo, mantenimiento o insumos criticos.",
+        inputType: "currency",
+        unit: "USD",
+        required: true,
+        placeholder: "0.00",
+        appliesTo: ["Imagenes"],
+        min: 0,
+      },
+      {
+        id: "bonus_pool",
+        label: "Bolsa de bonos sugerida",
+        description: "Monto estimado para bonos del periodo, sujeto a aprobacion.",
+        inputType: "currency",
+        unit: "USD",
+        required: false,
+        placeholder: "0.00",
+        appliesTo: ["Fisioterapia", "Laboratorio", "Imagenes"],
+        min: 0,
+      },
+    ],
+  },
+  {
+    id: "calidad-validacion",
+    title: "Calidad y validacion",
+    description:
+      "Registra completitud, correcciones y confirmacion para proteger los dashboards.",
+    ownerNote:
+      "Sin calidad suficiente, AnaliA debe mostrar advertencia y no conclusiones fuertes.",
+    fields: [
+      {
+        id: "missing_required_fields",
+        label: "Campos obligatorios faltantes",
+        description: "Cantidad de campos faltantes detectados antes de publicar.",
+        inputType: "number",
+        unit: "campos",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "corrections_count",
+        label: "Correcciones del mes",
+        description: "Ajustes realizados despues de la primera revision.",
+        inputType: "number",
+        unit: "correcciones",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+      },
+      {
+        id: "data_quality_score",
+        label: "Score de calidad",
+        description: "Calificacion interna de completitud, coherencia y trazabilidad.",
+        inputType: "percent",
+        unit: "%",
+        required: true,
+        placeholder: "0",
+        appliesTo: manualOperationalLines,
+        min: 0,
+        max: 100,
+      },
+      {
+        id: "manager_attestation",
+        label: "Confirmacion del gerente",
+        description: "Declaracion corta de cierre sin datos personales visibles.",
+        inputType: "text",
+        unit: "texto",
+        required: true,
+        placeholder: "Confirmo cierre mensual anonimo y conciliado.",
+        appliesTo: manualOperationalLines,
+      },
+    ],
+  },
+];
+
+export const manualMonthlyHistory: ManualMonthlyHistoryEntry[] = [
+  {
+    id: "manual-lab-aguilares-2026-06",
+    businessLine: "Laboratorio",
+    branch: "Aguilares",
+    period: "2026-06",
+    manager: "Gerencia Laboratorio",
+    netRevenue: 48950,
+    revenueTarget: 52000,
+    grossMarginRate: 38,
+    effectiveOccupancyRate: 74,
+    activityVolume: 8128,
+    dataQualityScore: 81,
+    status: "Publicado DEMO",
+    sourceTrace: "DEMO formulario mensual laboratorio v1",
+    createdAt: "2026-07-02",
+    demoFlag: true,
+  },
+  {
+    id: "manual-lab-aguilares-2026-07",
+    businessLine: "Laboratorio",
+    branch: "Aguilares",
+    period: "2026-07",
+    manager: "Gerencia Laboratorio",
+    netRevenue: 54100,
+    revenueTarget: 56000,
+    grossMarginRate: 36,
+    effectiveOccupancyRate: 78,
+    activityVolume: 8460,
+    dataQualityScore: 84,
+    status: "Borrador DEMO",
+    sourceTrace: "DEMO formulario mensual laboratorio v2",
+    createdAt: "2026-07-24",
+    demoFlag: true,
+  },
+  {
+    id: "manual-fisio-norte-2026-06",
+    businessLine: "Fisioterapia",
+    branch: "Fisioterapia Norte",
+    period: "2026-06",
+    manager: "Gerencia Fisioterapia",
+    netRevenue: 33200,
+    revenueTarget: 36000,
+    grossMarginRate: 44,
+    effectiveOccupancyRate: 61,
+    activityVolume: 1320,
+    dataQualityScore: 78,
+    status: "Publicado DEMO",
+    sourceTrace: "DEMO formulario mensual fisioterapia v1",
+    createdAt: "2026-07-02",
+    demoFlag: true,
+  },
+  {
+    id: "manual-fisio-norte-2026-07",
+    businessLine: "Fisioterapia",
+    branch: "Fisioterapia Norte",
+    period: "2026-07",
+    manager: "Gerencia Fisioterapia",
+    netRevenue: 35450,
+    revenueTarget: 37000,
+    grossMarginRate: 46,
+    effectiveOccupancyRate: 64,
+    activityVolume: 1394,
+    dataQualityScore: 82,
+    status: "Borrador DEMO",
+    sourceTrace: "DEMO formulario mensual fisioterapia v2",
+    createdAt: "2026-07-24",
+    demoFlag: true,
+  },
+  {
+    id: "manual-img-este-2026-06",
+    businessLine: "Imagenes",
+    branch: "Imagenes Este",
+    period: "2026-06",
+    manager: "Gerencia Imagenes",
+    netRevenue: 61400,
+    revenueTarget: 65000,
+    grossMarginRate: 41,
+    effectiveOccupancyRate: 63,
+    activityVolume: 521,
+    dataQualityScore: 76,
+    status: "Publicado DEMO",
+    sourceTrace: "DEMO formulario mensual imagenes v1",
+    createdAt: "2026-07-02",
+    demoFlag: true,
+  },
+  {
+    id: "manual-img-este-2026-07",
+    businessLine: "Imagenes",
+    branch: "Imagenes Este",
+    period: "2026-07",
+    manager: "Gerencia Imagenes",
+    netRevenue: 64220,
+    revenueTarget: 67500,
+    grossMarginRate: 39,
+    effectiveOccupancyRate: 67,
+    activityVolume: 548,
+    dataQualityScore: 79,
+    status: "Borrador DEMO",
+    sourceTrace: "DEMO formulario mensual imagenes v2",
+    createdAt: "2026-07-24",
+    demoFlag: true,
+  },
+];
+
 function isVisibleForLine(
   itemLine: ImportBusinessLine,
   selectedLine: ImportBusinessLine | "Todas",
@@ -1017,6 +1660,68 @@ export function getConnectorsForLine(line: ImportBusinessLine | "Todas") {
   return connectorPlans.filter((connector) =>
     isVisibleForLine(connector.businessLine, line),
   );
+}
+
+export function getManualMonthlyFormStepsForLine(
+  line: ImportBusinessLine,
+): ManualMonthlyFormStep[] {
+  return manualMonthlyFormSteps
+    .map((step) => ({
+      ...step,
+      fields: step.fields.filter((field) => field.appliesTo.includes(line)),
+    }))
+    .filter((step) => step.fields.length > 0);
+}
+
+export function getManualMonthlyHistoryForLine(
+  line: ImportBusinessLine | "Todas",
+) {
+  return manualMonthlyHistory.filter((entry) =>
+    line === "Todas" ? entry.businessLine !== "Consolidado" : entry.businessLine === line,
+  );
+}
+
+export function calculateManualMonthlyHistorySummary(
+  entries: ManualMonthlyHistoryEntry[],
+): ManualMonthlyHistorySummary {
+  const totalEntries = entries.length;
+  const publishedEntries = entries.filter(
+    (entry) => entry.status === "Publicado DEMO",
+  ).length;
+  const qualityWarnings = entries.filter(
+    (entry) =>
+      entry.status === "Bloqueado por calidad DEMO" ||
+      entry.dataQualityScore < 75,
+  ).length;
+  const lastEntry =
+    [...entries].sort((left, right) => right.period.localeCompare(left.period))[0] ??
+    null;
+  const marginTotal = entries.reduce(
+    (sum, entry) => sum + entry.grossMarginRate,
+    0,
+  );
+  const occupancyTotal = entries.reduce(
+    (sum, entry) => sum + entry.effectiveOccupancyRate,
+    0,
+  );
+  const qualityTotal = entries.reduce(
+    (sum, entry) => sum + entry.dataQualityScore,
+    0,
+  );
+
+  return {
+    totalEntries,
+    publishedEntries,
+    lastPeriod: lastEntry?.period ?? "Sin cierres",
+    lastNetRevenue: lastEntry?.netRevenue ?? 0,
+    averageMarginRate:
+      totalEntries > 0 ? Math.round(marginTotal / totalEntries) : 0,
+    averageOccupancyRate:
+      totalEntries > 0 ? Math.round(occupancyTotal / totalEntries) : 0,
+    averageDataQualityScore:
+      totalEntries > 0 ? Math.round(qualityTotal / totalEntries) : 0,
+    qualityWarnings,
+  };
 }
 
 export function getDocumentById(documentId: string) {
