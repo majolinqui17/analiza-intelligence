@@ -292,6 +292,22 @@ function getBranchOptionsForLine(
     );
 }
 
+function uniqueSortedNames(names: Array<string | undefined>) {
+  return Array.from(
+    new Set(names.map((name) => name?.trim()).filter(isString).filter(Boolean)),
+  ).sort((left, right) => left.localeCompare(right));
+}
+
+function getBranchManagerOptions(branchOptions: BranchOption[]) {
+  return uniqueSortedNames(
+    branchOptions.map((branch) => branch.branchManagerName),
+  );
+}
+
+function getAreaManagerOptions(branchOptions: BranchOption[]) {
+  return uniqueSortedNames(branchOptions.map((branch) => branch.areaManagerName));
+}
+
 function resolveBranchName(
   branchId: string | undefined,
   branchOptions: BranchOption[],
@@ -419,11 +435,15 @@ function buildInitialFormValues(
   values.load_deadline_date = getMonthlyLoadDeadline(values.period);
   values.manager_attestation =
     "Confirmo cierre mensual anonimo, conciliado y sin datos personales visibles.";
+  const contextManagerName =
+    context?.managerName && context.managerName !== "Todos los gerentes"
+      ? context.managerName
+      : values.manager_name;
 
   return applyBranchMetadata(
     {
       ...values,
-      manager_name: context?.managerName ?? values.manager_name,
+      manager_name: contextManagerName,
     },
     findSelectedBranch(values.branch_reported, branchOptions),
   );
@@ -531,12 +551,16 @@ function fieldInputStep(field: ManualMonthlyFormField) {
 }
 
 function ManualField({
+  areaManagerOptions,
+  branchManagerOptions,
   branchOptions,
   field,
   onChange,
   readOnly,
   value,
 }: {
+  areaManagerOptions: string[];
+  branchManagerOptions: string[];
   branchOptions: BranchOption[];
   field: ManualMonthlyFormField;
   onChange: (value: string) => void;
@@ -549,9 +573,22 @@ function ManualField({
     field.inputType === "currency" ||
     field.inputType === "number" ||
     field.inputType === "percent";
+  const isBranchSelector = field.id === "branch_reported";
+  const isBranchManagerSelector = field.id === "manager_name";
+  const isAreaManagerSelector = field.id === "area_manager_name";
+  const isSelectField =
+    isBranchSelector || isBranchManagerSelector || isAreaManagerSelector;
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     onChange(event.target.value);
+  }
+
+  function renderTextOption(option: string) {
+    return (
+      <option key={option} value={option}>
+        {option}
+      </option>
+    );
   }
 
   return (
@@ -564,9 +601,10 @@ function ManualField({
         {field.description}
       </span>
       <span className="relative">
-        {field.id === "branch_reported" ? (
+        {isBranchSelector ? (
           <select
             className="h-11 w-full rounded-md border bg-background px-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+            disabled={readOnly}
             onChange={(event) => onChange(event.target.value)}
             value={value}
           >
@@ -577,12 +615,38 @@ function ManualField({
               </option>
             ))}
           </select>
+        ) : isBranchManagerSelector ? (
+          <select
+            className="h-11 w-full rounded-md border bg-background px-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+            disabled={readOnly}
+            onChange={(event) => onChange(event.target.value)}
+            value={value}
+          >
+            <option value="">{field.placeholder}</option>
+            {value && !branchManagerOptions.includes(value)
+              ? renderTextOption(value)
+              : null}
+            {branchManagerOptions.map(renderTextOption)}
+          </select>
+        ) : isAreaManagerSelector ? (
+          <select
+            className="h-11 w-full rounded-md border bg-background px-3 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+            disabled={readOnly}
+            onChange={(event) => onChange(event.target.value)}
+            value={value}
+          >
+            <option value="">{field.placeholder}</option>
+            {value && !areaManagerOptions.includes(value)
+              ? renderTextOption(value)
+              : null}
+            {areaManagerOptions.map(renderTextOption)}
+          </select>
         ) : isCurrency ? (
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
             $
           </span>
         ) : null}
-        {field.id !== "branch_reported" ? (
+        {!isSelectField ? (
           <Input
             className={cn(
               "h-11",
@@ -601,7 +665,7 @@ function ManualField({
             value={value}
           />
         ) : null}
-        {isPercent && field.id !== "branch_reported" ? (
+        {isPercent && !isSelectField ? (
           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
             %
           </span>
@@ -706,19 +770,31 @@ export function ManualMonthlyEntryDashboard() {
     () => getBranchOptionsForLine(activeLine, context),
     [activeLine, context],
   );
+  const branchManagerOptions = useMemo(
+    () => getBranchManagerOptions(branchOptions),
+    [branchOptions],
+  );
+  const areaManagerOptions = useMemo(
+    () => getAreaManagerOptions(branchOptions),
+    [branchOptions],
+  );
   const selectedBranch = useMemo(
     () => findSelectedBranch(formValues.branch_reported, branchOptions),
     [branchOptions, formValues.branch_reported],
   );
+  const selectedBranchManagerName =
+    formValues.manager_name || selectedBranch?.branchManagerName;
+  const selectedAreaManagerName =
+    formValues.area_manager_name || selectedBranch?.areaManagerName;
   const branchGroupCount = useMemo(() => {
-    if (!selectedBranch?.areaManagerName) {
+    if (!selectedAreaManagerName) {
       return 0;
     }
 
     return branchOptions.filter(
-      (branch) => branch.areaManagerName === selectedBranch.areaManagerName,
+      (branch) => branch.areaManagerName === selectedAreaManagerName,
     ).length;
-  }, [branchOptions, selectedBranch?.areaManagerName]);
+  }, [branchOptions, selectedAreaManagerName]);
 
   useEffect(() => {
     setFormValues(buildInitialFormValues(activeLine, context, branchOptions));
@@ -1002,11 +1078,11 @@ export function ManualMonthlyEntryDashboard() {
             </span>
             <span>
               Gerente sucursal:{" "}
-              {selectedBranch?.branchManagerName ?? "Pendiente de asignar"}
+              {selectedBranchManagerName ?? "Pendiente de asignar"}
             </span>
             <span>
               Gerente de area:{" "}
-              {selectedBranch?.areaManagerName ?? "Pendiente de asignar"}
+              {selectedAreaManagerName ?? "Pendiente de asignar"}
             </span>
           </div>
         </article>
@@ -1089,16 +1165,14 @@ export function ManualMonthlyEntryDashboard() {
             <div className="grid gap-3 lg:grid-cols-2">
               {currentStep?.fields.map((field) => (
                 <ManualField
+                  areaManagerOptions={areaManagerOptions}
+                  branchManagerOptions={branchManagerOptions}
                   branchOptions={branchOptions}
                   field={field}
                   key={field.id}
                   onChange={(value) => updateField(field.id, value)}
                   readOnly={
-                    ["area_manager_name", "area_zone", "load_deadline_date"].includes(
-                      field.id,
-                    ) ||
-                    (field.id === "manager_name" &&
-                      Boolean(selectedBranch?.branchManagerName))
+                    ["area_zone", "load_deadline_date"].includes(field.id)
                   }
                   value={formValues[field.id] ?? ""}
                 />

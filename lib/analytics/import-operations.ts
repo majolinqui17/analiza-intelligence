@@ -1108,22 +1108,22 @@ export const manualMonthlyFormSteps: ManualMonthlyFormStep[] = [
         id: "manager_name",
         label: "Gerente de sucursal",
         description:
-          "Se completa desde el catalogo al elegir sucursal; si falta, debe asignarse antes de publicar.",
+          "Selecciona el gerente de sucursal desde el catalogo; si falta, debe asignarse antes de publicar.",
         inputType: "text",
         unit: "responsable",
         required: true,
-        placeholder: "Nombre del gerente",
+        placeholder: "Selecciona gerente de sucursal",
         appliesTo: manualOperationalLines,
       },
       {
         id: "area_manager_name",
         label: "Gerente de area",
         description:
-          "Responsable de area que supervisa el grupo de sucursales.",
+          "Selecciona el gerente de area que supervisa el grupo de sucursales.",
         inputType: "text",
         unit: "responsable",
         required: true,
-        placeholder: "Nombre del gerente de area",
+        placeholder: "Selecciona gerente de area",
         appliesTo: manualOperationalLines,
       },
       {

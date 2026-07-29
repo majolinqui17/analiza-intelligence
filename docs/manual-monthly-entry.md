@@ -8,6 +8,7 @@ La via manual principal para actualizar Analiza Intelligence sera un formulario 
 
 - Cada gerente registra un cierre mensual por linea de negocio.
 - La sucursal reportada se elige desde el catalogo activo de sucursales; no se captura como texto libre.
+- El gerente de sucursal y el gerente de area se eligen desde listas derivadas del catalogo; no se capturan como texto libre.
 - El catalogo de sucursales incluye gerente de sucursal, gerente de area, pais, zona y linea de negocio desde `ddddd2.xlsx`.
 - El cierre captura contexto, resultados comerciales, operacion, citas, capacidad, costos, margen y calidad.
 - Cada registro conserva historial por linea, sucursal, periodo, fuente, estado y marca `DEMO`.

@@ -53,6 +53,13 @@ assert(
   "Manual monthly dashboard must render branch_reported as a branch selector.",
 );
 assert(
+  component.includes("getBranchManagerOptions") &&
+    component.includes("getAreaManagerOptions") &&
+    component.includes('field.id === "manager_name"') &&
+    component.includes('field.id === "area_manager_name"'),
+  "Manual monthly dashboard must render branch and area managers as selectors.",
+);
+assert(
   component.includes("getMonthlyLoadDeadline") &&
     component.includes("edit_authorization_code") &&
     component.includes("Ese cierre ya fue publicado"),
