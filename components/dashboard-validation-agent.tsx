@@ -46,6 +46,78 @@ const quickQuestions = [
   "Que hago primero?",
 ];
 
+function normalizeChatText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function cleanReadableLine(value: string) {
+  return value
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isReadableScreenLine(value: string) {
+  const normalizedValue = normalizeChatText(value);
+  const navigationMatches = [
+    "analiza intelligence",
+    "inicio por rol",
+    "resumen ejecutivo",
+    "operacion ejecutiva",
+    "todos los gerentes",
+    "admin.demo",
+    "salir",
+  ].filter((fragment) => normalizedValue.includes(fragment));
+
+  if (value.length < 4 || value.length > 220 || navigationMatches.length >= 3) {
+    return false;
+  }
+
+  return ![
+    "demo",
+    "filtros",
+    "todos",
+    "consolidado",
+    "pais",
+    "linea de negocio",
+  ].includes(normalizedValue);
+}
+
+function getFriendlyBulletText(value: string) {
+  const cleanedValue = cleanReadableLine(value);
+
+  if (cleanedValue.length <= 150) {
+    return cleanedValue;
+  }
+
+  return `${cleanedValue.slice(0, 147).trim()}...`;
+}
+
+function getFriendlyBullets(bullets: string[]) {
+  const seen = new Set<string>();
+  const friendlyBullets = bullets
+    .map(getFriendlyBulletText)
+    .filter(isReadableScreenLine)
+    .filter((bullet) => {
+      const normalizedBullet = normalizeChatText(bullet);
+
+      if (seen.has(normalizedBullet)) {
+        return false;
+      }
+
+      seen.add(normalizedBullet);
+      return true;
+    })
+    .slice(0, 4);
+
+  return friendlyBullets.length > 0
+    ? friendlyBullets
+    : ["No encontre senales visibles limpias para resumir en esta pantalla."];
+}
+
 function getDensityTone(audit: DashboardValidationAudit) {
   if (audit.densityStatus === "Muy cargada") {
     return "border-orange-200 bg-orange-50 text-orange-950";
@@ -90,13 +162,38 @@ function getReadableScreenText() {
   }
 
   clonedNode
-    .querySelectorAll("[data-analia-agent], script, style")
+    .querySelectorAll(
+      [
+        "[data-analia-agent]",
+        "[aria-hidden='true']",
+        "[role='navigation']",
+        "[role='tablist']",
+        "aside",
+        "button",
+        "footer",
+        "form",
+        "header",
+        "input",
+        "nav",
+        "script",
+        "select",
+        "style",
+        "textarea",
+      ].join(", "),
+    )
     .forEach((node) => node.remove());
 
   return clonedNode.innerText
-    .replace(/\n{3,}/g, "\n\n")
-    .trim()
-    .slice(0, 6000);
+    .split("\n")
+    .map(cleanReadableLine)
+    .filter(isReadableScreenLine)
+    .filter(
+      (line, index, allLines) =>
+        allLines.findIndex((candidate) => candidate === line) === index,
+    )
+    .slice(0, 60)
+    .join("\n")
+    .slice(0, 5000);
 }
 
 function formatChatTime() {
@@ -225,17 +322,22 @@ export function DashboardValidationAgent() {
 
   return (
     <aside
-      className="fixed bottom-3 left-3 right-3 z-50 mx-auto max-w-2xl print:hidden lg:left-auto lg:right-4"
+      className="fixed bottom-3 left-3 right-3 z-50 mx-auto max-w-[460px] print:hidden lg:left-auto lg:right-4"
       data-analia-agent
     >
-      <div className={cn("rounded-md border bg-card shadow-lg", getDensityTone(audit))}>
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+      <div className="overflow-hidden rounded-2xl border bg-background shadow-2xl">
+        <div
+          className={cn(
+            "flex flex-wrap items-center justify-between gap-2 px-3 py-2",
+            getDensityTone(audit),
+          )}
+        >
           <button
             className="flex min-w-0 flex-1 items-center gap-2 text-left"
             onClick={() => setIsAuditOpen((current) => !current)}
             type="button"
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-background/80">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background/85">
               <Bot className="size-4 text-primary" />
             </span>
             <span className="min-w-0">
@@ -286,8 +388,8 @@ export function DashboardValidationAgent() {
           </div>
         </div>
 
-        <div className="grid gap-3 border-t border-current/10 bg-card/95 p-3 text-foreground">
-          <div className="rounded-md border bg-background p-3">
+        <div className="grid gap-3 border-t bg-card/95 p-3 text-foreground">
+          <div className="rounded-2xl border bg-muted/25 p-3">
             <div className="mb-2 flex items-center gap-2 text-sm font-medium">
               <Sparkles className="size-4 text-primary" />
               Preguntar a AnaliA sobre esta pantalla
@@ -295,6 +397,7 @@ export function DashboardValidationAgent() {
             <div className="flex flex-wrap gap-2">
               {quickQuestions.map((item) => (
                 <Button
+                  className="h-auto rounded-full px-3 py-2 text-left text-xs leading-4 sm:text-sm"
                   key={item}
                   onClick={() => askAnalia(item)}
                   size="sm"
@@ -307,54 +410,68 @@ export function DashboardValidationAgent() {
             </div>
           </div>
 
-          <div className="grid max-h-[44vh] gap-3 overflow-y-auto pr-1">
+          <div className="max-h-[52vh] space-y-4 overflow-y-auto pr-1">
             {messages.length === 0 ? (
-              <div className="rounded-md border bg-background p-3 text-sm leading-6 text-muted-foreground">
-                Puedes pedirme un resumen, una lectura completa de la pantalla
-                visible o una alerta critica. Uso el filtro activo, la auditoria
-                visual y el texto visible; todo queda marcado como DEMO.
+              <div className="flex items-start gap-2">
+                <span className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Bot className="size-4 text-primary" />
+                </span>
+                <div className="max-w-[88%] rounded-2xl rounded-bl-sm border bg-background px-3 py-2 text-sm leading-6 text-muted-foreground shadow-sm">
+                  Hola, soy AnaliA. Puedo resumir esta pantalla, detectar algo
+                  critico o decirte que revisar primero. Trabajo en modo DEMO.
+                </div>
               </div>
             ) : (
               messages.map((message) => (
-                <article className="grid gap-2" key={message.id}>
-                  <div className="rounded-md border bg-muted/60 p-3 text-sm">
-                    <span className="font-medium">Tu pregunta: </span>
-                    {message.question}
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {message.createdAt}
-                    </span>
-                  </div>
-                  <div className="rounded-md border bg-background p-3 text-sm">
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <Badge variant="outline">{message.response.intent}</Badge>
-                      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-                        Confianza {message.response.confidence}%
-                      </Badge>
-                    </div>
-                    <h2 className="font-semibold">{message.response.title}</h2>
-                    <p className="mt-2 leading-6 text-muted-foreground">
-                      {message.response.directAnswer}
-                    </p>
-                    <div className="mt-3 grid gap-2">
-                      {message.response.bullets.map((bullet) => (
-                        <span className="flex gap-2" key={bullet}>
-                          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" />
-                          {bullet}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs leading-5 text-amber-900">
-                      <div className="mb-1 flex items-center gap-1 font-medium">
-                        <AlertTriangle className="size-3.5" />
-                        Siguiente paso
+                <article className="space-y-2" key={message.id}>
+                  <div className="flex justify-end">
+                    <div className="max-w-[82%] rounded-2xl rounded-br-sm bg-primary px-3 py-2 text-sm text-primary-foreground shadow-sm">
+                      <p className="break-words">
+                        <span className="sr-only">Tu pregunta: </span>
+                        {message.question}
+                      </p>
+                      <div className="mt-1 text-right text-[10px] text-primary-foreground/75">
+                        {message.createdAt}
                       </div>
-                      {message.response.suggestedNextStep}
                     </div>
-                    <div className="mt-2 text-xs leading-5 text-muted-foreground">
-                      {message.response.caveat}
-                    </div>
-                    <div className="mt-2 text-xs leading-5 text-muted-foreground">
-                      Fuentes: {message.response.sources.join(" / ")}
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Bot className="size-4 text-primary" />
+                    </span>
+                    <div className="max-w-[88%] rounded-2xl rounded-bl-sm border bg-background px-3 py-3 text-sm shadow-sm">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">{message.response.intent}</Badge>
+                        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                          Confianza {message.response.confidence}%
+                        </Badge>
+                      </div>
+                      <h2 className="font-semibold">{message.response.title}</h2>
+                      <p className="mt-2 break-words leading-6 text-muted-foreground">
+                        {message.response.directAnswer}
+                      </p>
+                      <div className="mt-3 grid gap-2">
+                        {getFriendlyBullets(message.response.bullets).map((bullet) => (
+                          <span className="flex gap-2 break-words" key={bullet}>
+                            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" />
+                            {bullet}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="mt-3 grid gap-2 rounded-xl bg-muted/35 p-2 text-xs leading-5 text-muted-foreground">
+                        <div className="text-amber-900">
+                          <span className="inline-flex items-center gap-1 font-medium">
+                            <AlertTriangle className="size-3.5" />
+                            Siguiente paso:
+                          </span>{" "}
+                          {message.response.suggestedNextStep}
+                        </div>
+                        <div>{message.response.caveat}</div>
+                        <div>
+                          <span className="font-medium">Fuentes:</span>{" "}
+                          {message.response.sources.join(" / ")}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </article>
@@ -362,16 +479,20 @@ export function DashboardValidationAgent() {
             )}
           </div>
 
-          <form className="flex flex-col gap-2 sm:flex-row" onSubmit={submitQuestion}>
+          <form
+            className="flex items-center gap-2 rounded-full border bg-background p-1 shadow-sm"
+            onSubmit={submitQuestion}
+          >
             <Input
               aria-label="Pregunta para AnaliA"
+              className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0"
               onChange={(event) => setQuestion(event.target.value)}
               placeholder="Pregunta: resumen, critico, leer pantalla..."
               value={question}
             />
-            <Button type="submit">
+            <Button className="rounded-full" type="submit">
               <Send className="size-4" />
-              Preguntar
+              <span className="hidden sm:inline">Preguntar</span>
             </Button>
           </form>
 

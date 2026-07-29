@@ -333,6 +333,80 @@ function normalizeText(value: string) {
     .toLowerCase();
 }
 
+function cleanScreenLine(value: string) {
+  return value
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function looksLikeNavigationDump(value: string) {
+  const normalizedValue = normalizeText(value);
+  const navigationMatches = [
+    "analiza intelligence",
+    "inicio por rol",
+    "resumen ejecutivo",
+    "operacion ejecutiva",
+    "todos los gerentes",
+    "admin.demo",
+    "salir",
+  ].filter((fragment) => normalizedValue.includes(fragment));
+
+  return navigationMatches.length >= 3 || value.length > 220;
+}
+
+function isUsefulScreenLine(value: string) {
+  const normalizedValue = normalizeText(value);
+
+  if (value.length < 4 || looksLikeNavigationDump(value)) {
+    return false;
+  }
+
+  if (
+    normalizedValue === "demo" ||
+    normalizedValue === "filtros" ||
+    normalizedValue === "todos" ||
+    normalizedValue === "consolidado"
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function shortenChatLine(value: string) {
+  const cleanedValue = cleanScreenLine(value);
+
+  if (cleanedValue.length <= 150) {
+    return cleanedValue;
+  }
+
+  const firstSentence = cleanedValue
+    .split(/[.!?]\s+/)
+    .find((sentence) => sentence.length >= 20 && sentence.length <= 150);
+
+  return firstSentence ?? `${cleanedValue.slice(0, 147).trim()}...`;
+}
+
+function compactChatBullets(items: string[], maxItems = 4) {
+  const seen = new Set<string>();
+
+  return items
+    .map(shortenChatLine)
+    .filter(isUsefulScreenLine)
+    .filter((item) => {
+      const normalizedItem = normalizeText(item);
+
+      if (seen.has(normalizedItem)) {
+        return false;
+      }
+
+      seen.add(normalizedItem);
+      return true;
+    })
+    .slice(0, maxItems);
+}
+
 function detectChatIntent(question: string): AnaliaScreenChatIntent {
   const normalizedQuestion = normalizeText(question);
 
@@ -369,8 +443,8 @@ function detectChatIntent(question: string): AnaliaScreenChatIntent {
 function getScreenSignals(screenText: string) {
   const lines = screenText
     .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 3)
+    .map(cleanScreenLine)
+    .filter(isUsefulScreenLine)
     .filter(
       (line, index, allLines) =>
         allLines.findIndex((candidate) => candidate === line) === index,
@@ -394,9 +468,11 @@ function getScreenSignals(screenText: string) {
         normalizedLine.includes("calidad")
       );
     })
-    .slice(0, 6);
+    .slice(0, 4);
 
-  return relevantLines.length > 0 ? relevantLines : lines.slice(0, 6);
+  return (relevantLines.length > 0 ? relevantLines : lines.slice(0, 4)).map(
+    shortenChatLine,
+  );
 }
 
 function getCriticalItems(audit: DashboardValidationAudit, screenText: string) {
@@ -466,7 +542,7 @@ export function createAnaliaScreenChatResponse({
 
   if (intent === "critico") {
     return {
-      bullets: criticalItems,
+      bullets: compactChatBullets(criticalItems, 4),
       caveat:
         "No ejecuto acciones ni apruebo metas; solo priorizo senales con datos DEMO visibles.",
       confidence,
@@ -484,12 +560,12 @@ export function createAnaliaScreenChatResponse({
 
   if (intent === "lectura") {
     return {
-      bullets: [
+      bullets: compactChatBullets([
         `Modulo: ${audit.module}.`,
         `Linea activa: ${businessLine}.`,
         `Lectura principal: ${audit.decisionPrompt}`,
-        ...screenSignals.slice(0, 5),
-      ],
+        ...screenSignals.slice(0, 3).map((signal) => `Dato visible: ${signal}`),
+      ]),
       caveat:
         "Leo y resumo la pantalla visible; para datos reales necesito fuentes conectadas o plantillas validadas.",
       confidence,
@@ -506,12 +582,12 @@ export function createAnaliaScreenChatResponse({
 
   if (intent === "accion") {
     return {
-      bullets: [
+      bullets: compactChatBullets([
         `Prioridad: ${audit.decisionPrompt}`,
         `Grafica a mirar primero: ${audit.chartPriority[0]}.`,
         `Validacion minima: ${audit.validationChecks[0]}.`,
         ...criticalItems.slice(0, 2),
-      ],
+      ]),
       caveat:
         "Las acciones son recomendaciones DEMO; en produccion deben quedar auditadas y aprobadas por el rol correspondiente.",
       confidence,
@@ -527,12 +603,12 @@ export function createAnaliaScreenChatResponse({
   }
 
   return {
-    bullets: [
+    bullets: compactChatBullets([
       `Lo mas importante: ${audit.decisionPrompt}`,
       `Prioridad visual: ${audit.chartPriority.slice(0, 2).join(" y ")}.`,
       `Estado de lectura: ${audit.densityStatus}, score ${audit.densityScore}/100.`,
-      ...screenSignals.slice(0, 3),
-    ],
+      ...screenSignals.slice(0, 2).map((signal) => `Dato visible: ${signal}`),
+    ]),
     caveat:
       "Resumen generado sobre entorno DEMO; no sustituye validacion de datos reales.",
     confidence,

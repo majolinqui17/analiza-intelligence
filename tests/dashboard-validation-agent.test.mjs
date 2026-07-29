@@ -40,6 +40,8 @@ for (const requiredModelText of [
   "createAnaliaScreenChatResponse",
   "detectChatIntent",
   "getScreenSignals",
+  "compactChatBullets",
+  "looksLikeNavigationDump",
   "dataStatus: \"DEMO\"",
   "/protected/overview",
   "/protected/operacion",
@@ -71,6 +73,10 @@ for (const requiredComponentText of [
   "Lee esta pantalla",
   "Que hago primero?",
   "getReadableScreenText",
+  "getFriendlyBullets",
+  "rounded-br-sm",
+  "rounded-bl-sm",
+  "max-w-[82%]",
   "createAnaliaScreenChatResponse",
   "Fuentes:",
   "data-analia-dashboard-mode",
@@ -107,6 +113,8 @@ for (const requiredDocsText of [
   "Muy cargada",
   "Burbuja de chat global",
   "lectura de la pantalla visible",
+  "burbujas breves",
+  "filtra navegacion",
   "motor `DEMO` deterministico",
 ]) {
   if (!docs.includes(requiredDocsText)) {

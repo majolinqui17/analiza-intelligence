@@ -67,7 +67,7 @@ AnaliA esta disponible como burbuja flotante en las pantallas protegidas. El usu
 
 El chat usa la linea de negocio activa, el modulo actual, la auditoria visual y el texto visible de la pantalla. En esta fase responde con un motor `DEMO` deterministico; no consulta datos privados, no ejecuta acciones y no presenta resultados como reales.
 
-Cada respuesta muestra fuentes usadas, confianza y una cautela. Si el usuario pide algo critico, AnaliA prioriza senales como riesgo, pendiente, alerta, densidad visual o falta de trazabilidad.
+Cada respuesta se presenta en burbujas breves de conversacion: la pregunta del usuario queda separada de la respuesta de AnaliA, con bullets cortos, siguiente paso, fuentes usadas, confianza y una cautela. Antes de responder, el chat filtra navegacion, filtros, botones y textos demasiado largos para evitar que el menu completo se mezcle con los insights. Si el usuario pide algo critico, AnaliA prioriza senales como riesgo, pendiente, alerta, densidad visual o falta de trazabilidad.
 
 ## Seguridad y permisos
 
