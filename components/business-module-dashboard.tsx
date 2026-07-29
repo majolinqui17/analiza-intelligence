@@ -106,6 +106,10 @@ const allBusinessScope = "Todas las lineas de negocio";
 const allCountryScope = "Todos los paises";
 const allAreaScope = "Todas las gerencias de area";
 const allBranchScope = "Todas las sucursales";
+const formSelectClassName =
+  "h-10 w-full min-w-0 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60";
+const tableSelectClassName =
+  "h-9 w-full min-w-0 rounded-md border bg-background px-2 text-xs outline-none disabled:opacity-60";
 const initialDemoUsers: DemoManagedUser[] = [
   {
     id: "demo-admin",
@@ -851,204 +855,230 @@ function UsersAndPermissionsManager({
   }
 
   return (
-    <section className="grid gap-4 xl:grid-cols-[420px_1fr]">
+    <section className="grid min-w-0 gap-5">
       <form
-        className="grid gap-4 rounded-md border bg-card p-4"
+        className="grid min-w-0 gap-5 rounded-md border bg-card p-4"
         onSubmit={createDemoUser}
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <UserPlus className="size-4 text-primary" />
-            Invitar usuario DEMO
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="grid gap-2">
+            <div className="flex items-center gap-2 text-lg font-semibold tracking-normal">
+              <UserPlus className="size-5 text-primary" />
+              Invitar usuario DEMO
+            </div>
+            <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+              Crea usuarios por invitacion y define su alcance por pais, linea de
+              negocio, gerencia de area y sucursal. El acceso no depende solo del
+              rol.
+            </p>
           </div>
           <Badge variant={canCreateUsers ? "outline" : "secondary"}>
-            {demoRoleProfiles[activeRole].label}
+            Actuando como {demoRoleProfiles[activeRole].label}
           </Badge>
         </div>
 
         {!canCreateUsers ? (
-          <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+          <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
             <LockKeyhole className="mt-0.5 size-4 shrink-0" />
             Tu rol actual no tiene delegacion para invitar usuarios.
           </div>
         ) : null}
 
-        <div className="grid gap-2 rounded-md border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
+        <div className="grid gap-3 rounded-md border bg-muted/40 p-4 text-sm leading-6 text-muted-foreground md:grid-cols-2">
           <span>
-            Puedes invitar:{" "}
+            <strong className="text-foreground">Roles disponibles:</strong>{" "}
             {creatableRoles.length > 0
               ? creatableRoles.map((role) => demoRoleProfiles[role].label).join(", ")
               : "ningun rol"}
           </span>
           <span>
-            Sucursales: {canCreateBranchesForScope ? "puedes crear" : "solo lectura/asignadas"} ·
-            Areas: {canCreateAreasForScope ? "puedes crear" : "solo asignadas"}
+            <strong className="text-foreground">Alcance operativo:</strong>{" "}
+            Sucursales {canCreateBranchesForScope ? "puedes crear" : "solo lectura/asignadas"} ·
+            Areas {canCreateAreasForScope ? "puedes crear" : "solo asignadas"}
           </span>
         </div>
 
-        <label className="grid gap-1 text-sm">
-          <span className="font-medium">Nombre</span>
-          <Input
-            disabled={!canCreateUsers}
-            onChange={(event) => setFullName(event.target.value)}
-            placeholder="Nombre del usuario"
-            value={fullName}
-          />
-        </label>
+        <div className="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          <label className="grid min-w-0 gap-2 text-sm">
+            <span className="font-medium">Nombre</span>
+            <Input
+              className="h-10"
+              disabled={!canCreateUsers}
+              onChange={(event) => setFullName(event.target.value)}
+              placeholder="Nombre del usuario"
+              value={fullName}
+            />
+          </label>
 
-        <label className="grid gap-1 text-sm">
-          <span className="font-medium">Correo</span>
-          <Input
-            disabled={!canCreateUsers}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="correo@analiza.com"
-            type="email"
-            value={email}
-          />
-        </label>
+          <label className="grid min-w-0 gap-2 text-sm">
+            <span className="font-medium">Correo</span>
+            <Input
+              className="h-10"
+              disabled={!canCreateUsers}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="correo@analiza.com"
+              type="email"
+              value={email}
+            />
+          </label>
 
-        <label className="grid gap-1 text-sm">
-          <span className="font-medium">Rol</span>
-          <select
-            className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
-            disabled={!canCreateUsers}
-            onChange={(event) => setRoleKey(event.target.value as RoleKey)}
-            value={roleKey}
-          >
-            {creatableRoles.map((role) => (
-              <option key={role} value={role}>
-                {demoRoleProfiles[role].label}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs leading-5 text-muted-foreground">
-            {demoRoleProfiles[roleKey].accessSummary}
-          </span>
-        </label>
+          <label className="grid min-w-0 gap-2 text-sm">
+            <span className="font-medium">Rol</span>
+            <select
+              className={formSelectClassName}
+              disabled={!canCreateUsers}
+              onChange={(event) => setRoleKey(event.target.value as RoleKey)}
+              value={roleKey}
+            >
+              {creatableRoles.map((role) => (
+                <option key={role} value={role}>
+                  {demoRoleProfiles[role].label}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs leading-5 text-muted-foreground">
+              {demoRoleProfiles[roleKey].accessSummary}
+            </span>
+          </label>
 
-        <label className="grid gap-1 text-sm">
-          <span className="font-medium">Pais</span>
-          <select
-            className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
-            disabled={
-              !canCreateUsers || isSuperAdministrator(roleKey) || roleKey === "ceo"
-            }
-            onChange={(event) => setCountryScope(event.target.value)}
-            value={
-              isSuperAdministrator(roleKey) || roleKey === "ceo"
-                ? allCountryScope
-                : countryScope
-            }
-          >
-            {countryOptions.map((country) => (
-              <option key={country.value} value={country.value}>
-                {country.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label className="grid min-w-0 gap-2 text-sm">
+            <span className="font-medium">Pais</span>
+            <select
+              className={formSelectClassName}
+              disabled={
+                !canCreateUsers || isSuperAdministrator(roleKey) || roleKey === "ceo"
+              }
+              onChange={(event) => setCountryScope(event.target.value)}
+              value={
+                isSuperAdministrator(roleKey) || roleKey === "ceo"
+                  ? allCountryScope
+                  : countryScope
+              }
+            >
+              {countryOptions.map((country) => (
+                <option key={country.value} value={country.value}>
+                  {country.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="grid gap-1 text-sm">
-          <span className="font-medium">Linea de negocio</span>
-          <select
-            className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
-            disabled={
-              !canCreateUsers || isSuperAdministrator(roleKey) || roleKey === "ceo"
-            }
-            onChange={(event) => setBusinessScope(event.target.value)}
-            value={
-              isSuperAdministrator(roleKey) || roleKey === "ceo"
-                ? allBusinessScope
-                : businessScope
-            }
-          >
-            {businessOptions.map((business) => (
-              <option key={business.value} value={business.value}>
-                {business.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label className="grid min-w-0 gap-2 text-sm">
+            <span className="font-medium">Linea de negocio</span>
+            <select
+              className={formSelectClassName}
+              disabled={
+                !canCreateUsers || isSuperAdministrator(roleKey) || roleKey === "ceo"
+              }
+              onChange={(event) => setBusinessScope(event.target.value)}
+              value={
+                isSuperAdministrator(roleKey) || roleKey === "ceo"
+                  ? allBusinessScope
+                  : businessScope
+              }
+            >
+              {businessOptions.map((business) => (
+                <option key={business.value} value={business.value}>
+                  {business.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="grid gap-1 text-sm">
-          <span className="font-medium">Gerencia de area</span>
-          <select
-            className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
-            disabled={
-              !canCreateUsers ||
-              !["gerente_area", "gerente_sucursal", "usuario_operativo"].includes(
-                roleKey,
-              )
-            }
-            onChange={(event) => setAreaScope(event.target.value)}
-            value={
-              ["gerente_area", "gerente_sucursal", "usuario_operativo"].includes(
-                roleKey,
-              )
-                ? areaScope
-                : allAreaScope
-            }
-          >
-            {areaOptions.map((area) => (
-              <option key={area.value} value={area.value}>
-                {area.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label className="grid min-w-0 gap-2 text-sm">
+            <span className="font-medium">Gerencia de area</span>
+            <select
+              className={formSelectClassName}
+              disabled={
+                !canCreateUsers ||
+                !["gerente_area", "gerente_sucursal", "usuario_operativo"].includes(
+                  roleKey,
+                )
+              }
+              onChange={(event) => setAreaScope(event.target.value)}
+              value={
+                ["gerente_area", "gerente_sucursal", "usuario_operativo"].includes(
+                  roleKey,
+                )
+                  ? areaScope
+                  : allAreaScope
+              }
+            >
+              {areaOptions.map((area) => (
+                <option key={area.value} value={area.value}>
+                  {area.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="grid gap-1 text-sm">
-          <span className="font-medium">Sucursal</span>
-          <select
-            className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
-            disabled={
-              !canCreateUsers ||
-              !["gerente_sucursal", "usuario_operativo"].includes(roleKey)
-            }
-            onChange={(event) => setBranchScope(event.target.value)}
-            value={
-              ["gerente_sucursal", "usuario_operativo"].includes(roleKey)
-                ? branchScope
-                : allBranchScope
-            }
-          >
-            {branchOptions.map((branch) => (
-              <option key={branch.value} value={branch.value}>
-                {branch.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label className="grid min-w-0 gap-2 text-sm xl:col-span-2">
+            <span className="font-medium">Sucursal</span>
+            <select
+              className={formSelectClassName}
+              disabled={
+                !canCreateUsers ||
+                !["gerente_sucursal", "usuario_operativo"].includes(roleKey)
+              }
+              onChange={(event) => setBranchScope(event.target.value)}
+              value={
+                ["gerente_sucursal", "usuario_operativo"].includes(roleKey)
+                  ? branchScope
+                  : allBranchScope
+              }
+            >
+              {branchOptions.map((branch) => (
+                <option key={branch.value} value={branch.value}>
+                  {branch.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-        {message ? (
-          <div className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-            {message}
-          </div>
-        ) : null}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+          {message ? (
+            <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+              {message}
+            </div>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              La invitacion quedara pendiente hasta que el usuario la acepte.
+            </span>
+          )}
 
-        <Button disabled={!canCreateUsers} type="submit">
-          <UserPlus className="size-4" />
-          Enviar invitacion
-        </Button>
+          <Button disabled={!canCreateUsers} type="submit">
+            <UserPlus className="size-4" />
+            Enviar invitacion
+          </Button>
+        </div>
       </form>
 
-      <section className="rounded-md border bg-card p-4">
-        <div className="mb-4 flex items-center gap-2 text-sm font-medium">
-          <ClipboardList className="size-4 text-primary" />
-          Invitaciones y usuarios
+      <section className="grid min-w-0 gap-4 rounded-md border bg-card p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="grid gap-1">
+            <div className="flex items-center gap-2 text-lg font-semibold tracking-normal">
+              <ClipboardList className="size-5 text-primary" />
+              Invitaciones y usuarios
+            </div>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Revisa estado, alcance asignado y acciones disponibles por usuario.
+            </p>
+          </div>
+          <Badge variant="outline">{users.length} usuarios DEMO</Badge>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1120px] text-left text-sm">
+        <div className="min-w-0 overflow-x-auto">
+          <table className="w-full min-w-[1040px] table-fixed text-left text-sm">
             <thead className="text-xs text-muted-foreground">
               <tr className="border-b">
-                <th className="py-2 pr-4 font-medium">Usuario</th>
-                <th className="py-2 pr-4 font-medium">Rol</th>
-                <th className="py-2 pr-4 font-medium">Pais</th>
-                <th className="py-2 pr-4 font-medium">Linea</th>
-                <th className="py-2 pr-4 font-medium">Gerencia de area</th>
-                <th className="py-2 pr-4 font-medium">Sucursal</th>
-                <th className="py-2 pr-4 font-medium">Estado</th>
-                <th className="py-2 pr-4 font-medium">Accion</th>
+                <th className="w-[220px] py-2 pr-4 font-medium">Usuario</th>
+                <th className="w-[190px] py-2 pr-4 font-medium">Rol</th>
+                <th className="w-[140px] py-2 pr-4 font-medium">Pais</th>
+                <th className="w-[170px] py-2 pr-4 font-medium">Linea</th>
+                <th className="w-[190px] py-2 pr-4 font-medium">Gerencia</th>
+                <th className="w-[180px] py-2 pr-4 font-medium">Sucursal</th>
+                <th className="w-[150px] py-2 pr-4 font-medium">Estado</th>
+                <th className="w-[120px] py-2 pr-4 font-medium">Accion</th>
               </tr>
             </thead>
             <tbody>
@@ -1072,14 +1102,14 @@ function UsersAndPermissionsManager({
                 return (
                   <tr className="border-b last:border-b-0" key={user.id}>
                     <td className="py-3 pr-4">
-                      <div className="font-medium">{user.fullName}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="truncate font-medium">{user.fullName}</div>
+                      <div className="truncate text-xs text-muted-foreground">
                         {user.email}
                       </div>
                     </td>
                     <td className="py-3 pr-4">
                       <select
-                        className="h-8 rounded-md border bg-background px-2 text-xs outline-none disabled:opacity-60"
+                        className={tableSelectClassName}
                         disabled={user.id === "demo-admin" || user.status === "Inactivo"}
                         onChange={(event) =>
                           updateUserRole(user.id, event.target.value as RoleKey)
@@ -1093,19 +1123,19 @@ function UsersAndPermissionsManager({
                         ))}
                       </select>
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 pr-4 align-top">
                       {getCountryScopeLabel(user.countryScope ?? allCountryScope)}
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 pr-4 align-top">
                       {getBusinessScopeLabel(user.businessScope)}
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 pr-4 align-top">
                       {getAreaScopeLabel(user.areaScope)}
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 pr-4 align-top">
                       {getBranchScopeLabel(user.branchScope)}
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 pr-4 align-top">
                       <Badge variant="outline">{user.status}</Badge>
                       <div className="mt-1 text-xs text-muted-foreground">
                         {user.invitationStatus
@@ -1118,7 +1148,7 @@ function UsersAndPermissionsManager({
                         </div>
                       ) : null}
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 pr-4 align-top">
                       <Button
                         disabled={!canDeactivate}
                         onClick={() => deactivateDemoUser(user.id)}
@@ -1209,7 +1239,7 @@ export function BusinessModuleDashboard({ module }: BusinessModuleDashboardProps
         <UsersAndPermissionsManager context={context} />
       ) : null}
 
-      {config.explanation ? (
+      {config.explanation && module !== "usuarios-permisos" ? (
         <section className="rounded-md border bg-card p-4">
           <div className="mb-2 flex items-center gap-2 text-sm font-medium">
             <BarChart3 className="size-4 text-primary" />
@@ -1221,10 +1251,12 @@ export function BusinessModuleDashboard({ module }: BusinessModuleDashboardProps
         </section>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
-        <ModuleInsights config={config} />
-        <ModuleRows config={config} />
-      </div>
+      {module !== "usuarios-permisos" ? (
+        <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
+          <ModuleInsights config={config} />
+          <ModuleRows config={config} />
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -49,6 +49,8 @@ The shell should reduce cognitive load by role:
 
 Large line-of-business presentations should not become endless dashboard pages. Prefer cockpit views with tabs or guided sections: resumen, causas, plan, decisiones, and trazabilidad.
 
+Administrative forms that include wide tables, such as usuarios y permisos, should stack the form above the table or use a full-width form grid. Do not place a narrow form beside a wide table when selectors contain long role, branch, area, or business-line names.
+
 ## Branding
 
 Do not invent the logo. Provide configurable slots for:
