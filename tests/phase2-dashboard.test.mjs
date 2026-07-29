@@ -22,6 +22,7 @@ const contextDataPath = "lib/tenant/demo-context.ts";
 const businessModulesPath = "lib/analytics/demo-business-modules.ts";
 const appSidebarPath = "components/app-sidebar.tsx";
 const roleHomeComponentPath = "components/role-workspace-home.tsx";
+const readableTabsComponentPath = "components/readable-tabs.tsx";
 const elSalvadorTemplatesPath =
   "lib/analytics/el-salvador-result-templates.ts";
 const kpiRegistryPath = "lib/analytics/kpi-registry.ts";
@@ -50,6 +51,7 @@ for (const file of [
   businessModulesPath,
   appSidebarPath,
   roleHomeComponentPath,
+  readableTabsComponentPath,
   elSalvadorTemplatesPath,
   kpiRegistryPath,
   businessLineOperationsPath,
@@ -97,6 +99,7 @@ const contextData = readFileSync(contextDataPath, "utf8");
 const businessModules = readFileSync(businessModulesPath, "utf8");
 const appSidebar = readFileSync(appSidebarPath, "utf8");
 const roleHomeComponent = readFileSync(roleHomeComponentPath, "utf8");
+const readableTabsComponent = readFileSync(readableTabsComponentPath, "utf8");
 const elSalvadorTemplates = readFileSync(elSalvadorTemplatesPath, "utf8");
 const kpiRegistry = readFileSync(kpiRegistryPath, "utf8");
 const businessLineOperations = readFileSync(
@@ -266,6 +269,7 @@ for (const requiredDashboardData of [
 }
 
 for (const requiredSidebarText of [
+  "Inicio por rol",
   "Rol DEMO",
   "demoRoleProfiles",
   "analiza:demo-role",
@@ -280,6 +284,7 @@ for (const requiredSidebarText of [
 
 for (const requiredRoleHomeText of [
   "Bandeja de trabajo",
+  "Lectura en 10 segundos",
   "Que necesita decidir o completar este rol ahora",
   "Acceso recomendado",
   "Atajos por rol",
@@ -291,13 +296,60 @@ for (const requiredRoleHomeText of [
   }
 }
 
+for (const requiredReadableTabsText of [
+  "ReadableTabs",
+  "role=\"tablist\"",
+  "role=\"tabpanel\"",
+  "Secciones de lectura",
+]) {
+  if (!readableTabsComponent.includes(requiredReadableTabsText)) {
+    throw new Error(`Readable tabs are missing: ${requiredReadableTabsText}`);
+  }
+}
+
+for (const readableScreenPath of [
+  "components/professional-performance-dashboard.tsx",
+  "components/service-portfolio-dashboard.tsx",
+  "components/manager-bonus-dashboard.tsx",
+  "components/laboratory-presentation-dashboard.tsx",
+  "components/imaging-presentation-dashboard.tsx",
+  "components/import-operations-dashboard.tsx",
+]) {
+  let screenSource = "";
+
+  try {
+    screenSource = readFileSync(readableScreenPath, "utf8");
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      continue;
+    }
+
+    throw error;
+  }
+
+  if (!screenSource.includes("ReadableTabs")) {
+    throw new Error(`Heavy dashboard must use readable tabs: ${readableScreenPath}`);
+  }
+}
+
+for (const requiredRoleScopeText of [
+  'const ceoFocusedRoles: RoleKey[] = ["ceo"]',
+  'const operationsFocusedRoles: RoleKey[] = ["gerente_operaciones"]',
+  "adminDataRoles",
+]) {
+  if (!navigation.includes(requiredRoleScopeText)) {
+    throw new Error(`Navigation role scope is too broad: ${requiredRoleScopeText}`);
+  }
+}
+
 if (!contextHeader.includes("analiza:selected-context")) {
   throw new Error("Header context selector must persist selected context.");
 }
 
 for (const requiredContextText of [
-  "Contexto activo",
-  "Cambiar filtros",
+  "Linea activa",
+  "Pais o region",
+  "Filtros",
   "Filtros avanzados",
   "Fecha desde",
   "Fecha hasta",

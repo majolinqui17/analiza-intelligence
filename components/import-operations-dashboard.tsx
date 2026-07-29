@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ManualMonthlyEntryDashboard } from "@/components/manual-monthly-entry-dashboard";
+import { ReadableTabs } from "@/components/readable-tabs";
 import {
   bulkImportDocuments,
   buildCsvTemplate,
@@ -42,7 +43,6 @@ import {
   type ConnectorStatus,
   type ImportBusinessLine,
   type ImportFrequency,
-  type ImportSourceMode,
 } from "@/lib/analytics/import-operations";
 import { cn } from "@/lib/utils";
 
@@ -247,39 +247,6 @@ function ScopeCard({
         <span>Periodo: {formatPeriod(context)}</span>
       </div>
     </aside>
-  );
-}
-
-function ModeButton({
-  active,
-  description,
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  description: string;
-  icon: typeof FileSpreadsheet;
-  label: ImportSourceMode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={cn(
-        "grid rounded-md border bg-card p-4 text-left transition-colors hover:border-primary/50",
-        active && "border-primary bg-primary/5",
-      )}
-      onClick={onClick}
-      type="button"
-    >
-      <span className="mb-3 flex items-center gap-2 text-sm font-medium">
-        <Icon className="size-4 text-primary" />
-        {label}
-      </span>
-      <span className="text-xs leading-5 text-muted-foreground">
-        {description}
-      </span>
-    </button>
   );
 }
 
@@ -914,7 +881,7 @@ export function ImportOperationsDashboard() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(allStatuses);
   const [frequencyFilter, setFrequencyFilter] =
     useState<FrequencyFilter>(allFrequencies);
-  const [activeMode, setActiveMode] = useState<ImportSourceMode>("Carga masiva");
+  const [activeSection, setActiveSection] = useState("formulario-importaciones");
   const [selectedDocumentId, setSelectedDocumentId] = useState(
     bulkImportDocuments[0]?.id ?? "",
   );
@@ -1089,7 +1056,7 @@ export function ImportOperationsDashboard() {
 
   function useFallbackDocument(documentId: string) {
     setSelectedDocumentId(documentId);
-    setActiveMode("Carga masiva");
+    setActiveSection("carga-importaciones");
     setNotice(
       "Conector sin credenciales: se abrira la carga masiva que mantiene actualizado ese dato.",
     );
@@ -1120,95 +1087,124 @@ export function ImportOperationsDashboard() {
         <ScopeCard context={context} selectedLine={selectedLine} />
       </div>
 
-      <ManualMonthlyEntryDashboard />
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <MetricCard
-          icon={FileSpreadsheet}
-          label="Documentos requeridos"
-          note="Obligatorios para que los KPIs no queden incompletos."
-          value={`${currentSummary.requiredDocuments}`}
-        />
-        <MetricCard
-          icon={Clock3}
-          label="Pendientes requeridos"
-          note={`Proxima fecha: ${currentSummary.nextDueAt}.`}
-          value={`${currentSummary.pendingRequired}`}
-        />
-        <MetricCard
-          icon={CheckCircle2}
-          label="Validados/importados"
-          note="Listos para alimentar dashboards publicados."
-          value={`${currentSummary.validatedOrImported}`}
-        />
-        <MetricCard
-          icon={DatabaseZap}
-          label="Conectores pendientes"
-          note="Mientras tanto se usa carga masiva."
-          value={`${currentSummary.pendingConnectors}`}
-        />
-        <MetricCard
-          icon={AlertTriangle}
-          label="Con errores"
-          note="No publican datos hasta corregirlos."
-          value={`${currentSummary.errorDocuments}`}
-        />
-      </div>
-
-      <div className="grid gap-3 lg:grid-cols-2">
-        <ModeButton
-          active={activeMode === "Carga masiva"}
-          description="Uso excepcional: subir Excel/CSV solo para migraciones, reemplazos o datos que todavia no entran al formulario."
-          icon={FileUp}
-          label="Carga masiva"
-          onClick={() => setActiveMode("Carga masiva")}
-        />
-        <ModeButton
-          active={activeMode === "Conector"}
-          description="Para webmaster: mapear APIs oficiales, credenciales, frecuencia, calidad y plantilla fallback."
-          icon={DatabaseZap}
-          label="Conector"
-          onClick={() => setActiveMode("Conector")}
-        />
-      </div>
-
-      <ImportFilters
-        frequencyFilter={frequencyFilter}
-        selectedLine={selectedLine}
-        setFrequencyFilter={setFrequencyFilter}
-        setSelectedLine={setSelectedLine}
-        setStatusFilter={setStatusFilter}
-        statusFilter={statusFilter}
+      <ReadableTabs
+        activeTabId={activeSection}
+        onTabChange={setActiveSection}
+        tabs={[
+          {
+            id: "formulario-importaciones",
+            label: "Formulario mensual",
+            description: "Entrada manual principal por sucursal.",
+            children: <ManualMonthlyEntryDashboard />,
+          },
+          {
+            id: "control-importaciones",
+            label: "Control de carga",
+            description: "Pendientes, errores y cobertura por linea.",
+            children: (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                  <MetricCard
+                    icon={FileSpreadsheet}
+                    label="Documentos requeridos"
+                    note="Obligatorios para que los KPIs no queden incompletos."
+                    value={`${currentSummary.requiredDocuments}`}
+                  />
+                  <MetricCard
+                    icon={Clock3}
+                    label="Pendientes requeridos"
+                    note={`Proxima fecha: ${currentSummary.nextDueAt}.`}
+                    value={`${currentSummary.pendingRequired}`}
+                  />
+                  <MetricCard
+                    icon={CheckCircle2}
+                    label="Validados/importados"
+                    note="Listos para alimentar dashboards publicados."
+                    value={`${currentSummary.validatedOrImported}`}
+                  />
+                  <MetricCard
+                    icon={DatabaseZap}
+                    label="Conectores pendientes"
+                    note="Mientras tanto se usa carga masiva."
+                    value={`${currentSummary.pendingConnectors}`}
+                  />
+                  <MetricCard
+                    icon={AlertTriangle}
+                    label="Con errores"
+                    note="No publican datos hasta corregirlos."
+                    value={`${currentSummary.errorDocuments}`}
+                  />
+                </div>
+                <CoverageByLine statusOverrides={statusOverrides} />
+              </>
+            ),
+          },
+          {
+            id: "carga-importaciones",
+            label: "Carga masiva",
+            description: "Uso excepcional para Excel/CSV.",
+            children: (
+              <>
+                <ImportFilters
+                  frequencyFilter={frequencyFilter}
+                  selectedLine={selectedLine}
+                  setFrequencyFilter={setFrequencyFilter}
+                  setSelectedLine={setSelectedLine}
+                  setStatusFilter={setStatusFilter}
+                  statusFilter={statusFilter}
+                />
+                <div className="rounded-md border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                  {notice}
+                </div>
+                <BulkUploadPanel
+                  documents={visibleDocuments}
+                  onDownload={downloadTemplate}
+                  onFileChange={handleFileChange}
+                  onPublish={publishDocument}
+                  onReplace={replaceDocument}
+                  onSelectDocument={(importDocument) =>
+                    setSelectedDocumentId(importDocument.id)
+                  }
+                  onValidate={validateDocument}
+                  selectedDocument={selectedDocument}
+                  selectedFileName={selectedFileName}
+                  statusOverrides={statusOverrides}
+                />
+              </>
+            ),
+          },
+          {
+            id: "conectores-importaciones",
+            label: "Conectores",
+            description: "APIs, credenciales y fallback manual.",
+            children: (
+              <>
+                <div className="rounded-md border bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                  Los conectores son la via automatica. Si no hay credenciales,
+                  el sistema conserva formulario mensual o carga masiva como
+                  respaldo trazable.
+                </div>
+                <ConnectorPanel
+                  connectors={connectors}
+                  onUseFallback={useFallbackDocument}
+                />
+              </>
+            ),
+          },
+          {
+            id: "historial-importaciones",
+            label: "Historial y gobierno",
+            description: "Pipeline, auditoria y reglas.",
+            children: (
+              <>
+                <PipelineSection />
+                <BatchHistorySection />
+                <GovernanceSection />
+              </>
+            ),
+          },
+        ]}
       />
-
-      <div className="rounded-md border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-        {notice}
-      </div>
-
-      <CoverageByLine statusOverrides={statusOverrides} />
-
-      {activeMode === "Carga masiva" ? (
-        <BulkUploadPanel
-          documents={visibleDocuments}
-          onDownload={downloadTemplate}
-          onFileChange={handleFileChange}
-          onPublish={publishDocument}
-          onReplace={replaceDocument}
-          onSelectDocument={(importDocument) =>
-            setSelectedDocumentId(importDocument.id)
-          }
-          onValidate={validateDocument}
-          selectedDocument={selectedDocument}
-          selectedFileName={selectedFileName}
-          statusOverrides={statusOverrides}
-        />
-      ) : (
-        <ConnectorPanel connectors={connectors} onUseFallback={useFallbackDocument} />
-      )}
-
-      <PipelineSection />
-      <BatchHistorySection />
-      <GovernanceSection />
     </section>
   );
 }

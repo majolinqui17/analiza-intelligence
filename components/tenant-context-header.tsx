@@ -278,17 +278,16 @@ export function TenantContextHeader() {
 
   return (
     <div className="grid min-w-0 flex-1 gap-2">
-      <div className="flex min-w-0 flex-col gap-2 xl:flex-row xl:items-start">
-        <div className="grid min-w-72 gap-2 sm:grid-cols-2 xl:grid-cols-1">
-        <label className="grid gap-1 rounded-md border-2 border-primary/50 bg-accent px-3 py-2 text-xs shadow-sm">
-          <span className="font-semibold uppercase text-primary">
-            Linea de negocio activa
-          </span>
-          <span className="flex items-center gap-2">
-            <BriefcaseBusiness className="size-4 text-primary" />
+      <div className="flex min-w-0 flex-col gap-2 2xl:flex-row 2xl:items-center">
+        <label className="flex min-h-12 min-w-0 items-center gap-3 rounded-md border-2 border-primary/50 bg-accent px-3 py-2 text-xs shadow-sm 2xl:min-w-[310px]">
+          <BriefcaseBusiness className="size-4 shrink-0 text-primary" />
+          <span className="grid min-w-0 flex-1 gap-0.5">
+            <span className="font-semibold uppercase text-primary">
+              Linea activa
+            </span>
             <select
               aria-label="Linea de negocio activa"
-              className="min-w-0 flex-1 bg-transparent text-base font-semibold text-accent-foreground outline-none"
+              className="min-w-0 bg-transparent text-base font-semibold text-accent-foreground outline-none"
               value={businessLineId}
               onChange={(event) => handleBusinessLineChange(event.target.value)}
             >
@@ -301,10 +300,9 @@ export function TenantContextHeader() {
           </span>
         </label>
 
-        <label className="grid gap-1 rounded-md border bg-background px-3 py-2 text-xs">
-          <span className="font-medium text-muted-foreground">Pais o region</span>
-          <span className="flex items-center gap-2">
-            <Globe2 className="size-3.5 text-muted-foreground" />
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 rounded-md border bg-background p-2">
+          <label className="flex h-9 min-w-44 items-center gap-2 rounded-md border bg-muted/40 px-2 text-xs">
+            <Globe2 className="size-3.5 shrink-0 text-muted-foreground" />
             <select
               aria-label="Pais o region"
               className="min-w-0 flex-1 bg-transparent outline-none"
@@ -317,35 +315,28 @@ export function TenantContextHeader() {
                 </option>
               ))}
             </select>
-          </span>
-        </label>
-        </div>
+          </label>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-2 rounded-md border bg-background px-3 py-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="text-[0.68rem] font-semibold uppercase tracking-normal text-muted-foreground">
-                Contexto activo
-              </div>
-              <div className="truncate text-sm font-medium">
-                {selectedCountry?.name ?? "Vista regional"} ·{" "}
-                {selectedCompany?.name ?? "Vista consolidada"} · {branchName} ·{" "}
-                {periodLabel}
-              </div>
-            </div>
-            <button
-              className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent"
-              onClick={() => setAdvancedFiltersOpen((isOpen) => !isOpen)}
-              type="button"
-            >
-              <SlidersHorizontal className="size-3.5" />
-              Cambiar filtros
-            </button>
+          <div className="min-w-0 flex-1 truncate px-1 text-sm">
+            <span className="font-medium">
+              {selectedCompany?.name ?? "Vista consolidada"}
+            </span>
+            <span className="text-muted-foreground"> · {branchName}</span>
+            <span className="text-muted-foreground"> · {periodLabel}</span>
           </div>
-          <div className="text-xs text-muted-foreground">
-            {selectedManager.name} · DEMO · filtros avanzados{" "}
-            {advancedFiltersOpen ? "visibles" : "colapsados"}
-          </div>
+
+          <button
+            className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+            onClick={() => setAdvancedFiltersOpen((isOpen) => !isOpen)}
+            type="button"
+          >
+            <SlidersHorizontal className="size-3.5" />
+            Filtros
+          </button>
+
+          <span className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
+            {selectedManager.name} · DEMO
+          </span>
         </div>
       </div>
 

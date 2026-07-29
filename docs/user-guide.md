@@ -2,36 +2,65 @@
 
 ## Login
 
-Users sign in with an assigned account. Public self-registration is not part of the product flow and the visible UI does not provide a sign-up path. Password recovery is available through Supabase Auth.
+Users sign in with an assigned account. The UI shows `Crear cuenta`, but it is a controlled account-creation page that explains administrative provisioning. Public self-registration is not part of the product flow. Password recovery is available through Supabase Auth.
 
-## Context Selection
+For local exploration, use `Entrar al panel ejecutivo DEMO` from the login page. This creates a temporary DEMO admin session without real credentials. It is not intended for production access and can be disabled with `ANALIZA_DISABLE_DEMO_ADMIN=true`.
+
+## Roles
+
+Analiza Intelligence uses role-based workspaces:
+
+- Superadministrador / Webmaster: configures the platform, users, permissions, connectors, data quality and audit.
+- CEO: reads the BI executive view for Analiza and its business lines.
+- Gerente de operaciones: manages one business line, closings, quality, capacity and branch risk.
+- Gerente de area: supervises assigned branches, explains variations and validates action plans.
+- Gerente de sucursal: completes the monthly close, reviews branch goals, alerts and pending evidence.
+- Usuario operativo: completes assigned data-entry tasks without managerial privileges.
+- Viewer: reads authorized information only.
+
+In DEMO, the sidebar includes a role selector so the reduced menu and role workspace can be previewed as each role.
+
+## Role Workspace
+
+Every user should start at `/protected`. The role workspace shows the first read in under 10 seconds:
+
+- what is happening
+- what needs review
+- what action is expected
+- which screen should be opened first
+
+The sidebar intentionally shows fewer modules per role. Detailed dashboards remain available through the recommended action, local tabs, drilldowns or authorized role switching in DEMO.
+
+## Business View Selection
 
 After login, users select:
 
-1. Country.
-2. Company.
-3. Branch.
+1. Region or country.
+2. Consolidated view or business unit.
+3. Branch or all assigned branches.
+4. Date range, from and to.
 
-Executive roles may access regional or consolidated views when assigned. Other users only see countries, companies, and branches assigned to their profile.
+CEO and Webmaster / Administrador may access regional or consolidated views when assigned. Gerente de operaciones is scoped by business line, and Gerente de sucursal is scoped to assigned branches.
 
-Phase 1 provides a protected context selection screen at:
+The screen that previously appeared as `context` is the executive business view selection screen. It decides what the user is looking at before entering the dashboards:
 
 ```text
 /protected/context
 ```
 
-The current UI uses DEMO bootstrap context until Supabase assignments are populated from the Phase 1 migration and seed.
+In the UI, this is presented as `Elige que negocio quieres ver`: regional or country, consolidated or business unit, branch, and date range. The current UI uses DEMO bootstrap values until Supabase assignments are populated from the Phase 1 migration and seed.
 
 ## Header Selector
 
-The app header will keep persistent selectors for:
+The app header keeps a compact persistent context bar:
 
-- country
-- company
-- branch
-- period
+- business line
+- country or region
+- branch summary
+- selected period
+- advanced filters behind `Filtros`
 
-The protected header now stores these values in the browser under the Analiza context key so the selection survives navigation.
+The protected header stores these values in the browser under the Analiza context key so the selection survives navigation. Dashboards refresh their selected business, branch, and date range when the header selector changes.
 
 ## Dashboards
 
@@ -44,13 +73,17 @@ Every dashboard should show:
 - completeness percentage
 - DEMO label when applicable
 
+Dense dashboards use tabs or guided sections. The first tab should show KPI summary and executive reading; later tabs contain comparison charts, detail tables, rules and audit.
+
 The Phase 2 executive dashboard is available at:
 
 ```text
 /protected/overview
 ```
 
-It uses DEMO values only and labels them visibly.
+It uses DEMO values only and labels them visibly. The first executive section is intentionally split by business line instead of showing one mixed total. It shows Fisioterapia, Laboratorio, and Imagenes separately so each line keeps its own revenue, goal, margin, appointments, occupancy, and alert.
+
+After the business-line summary, the executive dashboard shows financial health by line, company participation, goals vs results by company, monthly revenue, appointment status, effective occupancy, and adjusted performance. These panels read the header selector, so choosing a business unit or branch narrows the dashboard instead of leaving the same consolidated view.
 
 ## Operational Views
 
@@ -61,12 +94,55 @@ Phase 3 adds DEMO operational views:
 - `/protected/sucursales`
 - `/protected/gerentes`
 
-Manager performance uses separated components and does not present a score when capacity or data completeness is insufficient.
+Appointments show citas por negocio and appointment success rate by business and branch. Capacity shows prior month, current month, goal, and attendance gaps. Branches show managers, result templates, goals, sales, losses, revenue, operating costs, appointments, and data quality. Manager performance uses separated components and does not present a score when capacity or data completeness is insufficient; it also includes organization view and bonus-oriented employee performance.
+
+## Business Modules
+
+The DEMO module pages now include structured panels for:
+
+- operation
+- financial health
+- professionals
+- services
+- fisioterapia
+- laboratorio
+- imagenes
+- insights
+- imports
+- templates
+- connectors
+- data quality
+- goals
+- users and permissions
+- account settings
+- audit
+
+`Mi cuenta` is for profile, password recovery, preferences, and user-level settings. System-wide configuration remains an admin-only responsibility.
+
+Only Webmaster / Administrador can create users or change roles. Gerente de operaciones can upload branch templates for their business line. Gerente de sucursal is read-only.
 
 ## Imports
 
 The import center guides users through template download, file upload, column mapping, validation, preview, error review, confirmation, processing, and audit history.
 
+Templates are the root of the system when no API or CRM connector is available. The minimum root templates are appointments, capacity, costs, revenue, services, professionals, targets, result templates by branch, and payroll/bonus sheets.
+
+For El Salvador, the current branch result template is recognized for:
+
+- Aguilares
+- Chalatenango
+- Constitucion
+- La Libertad
+- Merliot 2
+- Plaza Sur
+- Santa Tecla
+
+These files feed branch revenue, target, sales completion, cost of sale, margin, manager, area manager, rows loaded, and data-quality warnings. Customer names and phone numbers must not be shown in dashboards; they are treated as sensitive source fields and used only for controlled validation when necessary.
+
 ## Data Quality
 
-When data is incomplete or invalid, affected dashboards show warnings and avoid conclusive insights.
+Data quality means the system knows whether the information is complete, valid, consistent, unique, timely, and traceable. When data is incomplete or invalid, affected dashboards show warnings and avoid conclusive insights.
+
+## Audit
+
+Audit should show who changed what, when, from which module, previous value, new value, and reason. It should cover imports, template approvals, goal changes, permission changes, connector runs, exports, reversals, and KPI traceability.

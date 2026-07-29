@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Home, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,22 @@ export function AppSidebar({ roleKey }: AppSidebarProps) {
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <div className="grid gap-4">
+          <Link
+            className={cn(
+              "flex h-10 items-center gap-3 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+              pathname === "/protected" &&
+                "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              collapsed && "justify-center px-0",
+            )}
+            href="/protected"
+            title="Inicio por rol"
+          >
+            <Home className="size-4 shrink-0" />
+            <span className={cn(collapsed && "sr-only")}>
+              Inicio por rol
+            </span>
+          </Link>
+
           {visibleGroups.map((group) => (
             <section className="grid gap-1" key={group.key}>
               <div

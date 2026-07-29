@@ -92,15 +92,12 @@ const allRoles: RoleKey[] = [
   "viewer",
 ];
 
-const executiveRoles: RoleKey[] = [...adminRoles, "ceo"];
-
 const dataReadRoles: RoleKey[] = [
   ...adminRoles,
   "ceo",
   "gerente_operaciones",
   "gerente_area",
   "gerente_sucursal",
-  "usuario_operativo",
   "viewer",
 ];
 
@@ -112,20 +109,15 @@ const delegatedUserAdminRoles: RoleKey[] = [
   "gerente_area",
 ];
 
-const ceoFocusedRoles: RoleKey[] = [...adminRoles, "ceo"];
-const operationsFocusedRoles: RoleKey[] = [...adminRoles, "gerente_operaciones"];
-const areaFocusedRoles: RoleKey[] = [
-  ...adminRoles,
-  "gerente_operaciones",
-  "gerente_area",
-];
+const ceoFocusedRoles: RoleKey[] = ["ceo"];
+const operationsFocusedRoles: RoleKey[] = ["gerente_operaciones"];
 const branchFocusedRoles: RoleKey[] = [
-  ...adminRoles,
   "gerente_operaciones",
   "gerente_area",
   "gerente_sucursal",
 ];
-const linePresentationRoles: RoleKey[] = adminRoles;
+const adminDataRoles: RoleKey[] = [...adminRoles, "gerente_operaciones"];
+const deepDiagnosticRoles: RoleKey[] = [];
 
 export const navigationItems: NavigationItem[] = [
   {
@@ -133,7 +125,7 @@ export const navigationItems: NavigationItem[] = [
     href: "/protected/overview",
     icon: LayoutDashboard,
     group: "direccion",
-    allowedRoles: ceoFocusedRoles,
+    allowedRoles: [...ceoFocusedRoles, "viewer"],
   },
   {
     title: "Operacion ejecutiva",
@@ -154,14 +146,14 @@ export const navigationItems: NavigationItem[] = [
     href: "/protected/citas",
     icon: CalendarClock,
     group: "operacion",
-    allowedRoles: areaFocusedRoles,
+    allowedRoles: deepDiagnosticRoles,
   },
   {
     title: "Capacidad y ocupacion",
     href: "/protected/capacidad",
     icon: Gauge,
     group: "operacion",
-    allowedRoles: areaFocusedRoles,
+    allowedRoles: operationsFocusedRoles,
   },
   {
     title: "Sucursales",
@@ -175,42 +167,42 @@ export const navigationItems: NavigationItem[] = [
     href: "/protected/gerentes",
     icon: UsersRound,
     group: "gestion",
-    allowedRoles: [...branchFocusedRoles, "ceo"],
+    allowedRoles: ["gerente_area"],
   },
   {
     title: "Profesionales",
     href: "/protected/profesionales",
     icon: Stethoscope,
     group: "gestion",
-    allowedRoles: operationsFocusedRoles,
+    allowedRoles: deepDiagnosticRoles,
   },
   {
     title: "Servicios",
     href: "/protected/servicios",
     icon: ClipboardCheck,
     group: "gestion",
-    allowedRoles: operationsFocusedRoles,
+    allowedRoles: deepDiagnosticRoles,
   },
   {
     title: "Fisioterapia",
     href: "/protected/fisioterapia",
     icon: HeartPulse,
     group: "lineas",
-    allowedRoles: linePresentationRoles,
+    allowedRoles: deepDiagnosticRoles,
   },
   {
     title: "Laboratorio",
     href: "/protected/laboratorio",
     icon: FlaskConical,
     group: "lineas",
-    allowedRoles: linePresentationRoles,
+    allowedRoles: deepDiagnosticRoles,
   },
   {
     title: "Imagenes",
     href: "/protected/imagenes",
     icon: ImagePlus,
     group: "lineas",
-    allowedRoles: linePresentationRoles,
+    allowedRoles: deepDiagnosticRoles,
   },
   {
     title: "Insights",
@@ -224,7 +216,7 @@ export const navigationItems: NavigationItem[] = [
     href: "/protected/importaciones",
     icon: Import,
     group: "datos",
-    allowedRoles: operationsFocusedRoles,
+    allowedRoles: adminDataRoles,
   },
   {
     title: "Formulario mensual",
@@ -245,14 +237,14 @@ export const navigationItems: NavigationItem[] = [
     href: "/protected/calidad-datos",
     icon: ShieldCheck,
     group: "datos",
-    allowedRoles: operationsFocusedRoles,
+    allowedRoles: adminDataRoles,
   },
   {
     title: "Metas y avances",
     href: "/protected/metas",
     icon: Goal,
     group: "direccion",
-    allowedRoles: [...branchFocusedRoles, "ceo"],
+    allowedRoles: ["ceo", "gerente_area", "gerente_sucursal"],
   },
   {
     title: "Usuarios y permisos",
@@ -273,7 +265,7 @@ export const navigationItems: NavigationItem[] = [
     href: "/protected/auditoria",
     icon: BarChart3,
     group: "sistema",
-    allowedRoles: executiveRoles,
+    allowedRoles: adminRoles,
   },
 ];
 

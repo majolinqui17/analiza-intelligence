@@ -400,19 +400,32 @@ export function RoleWorkspaceHome() {
         </aside>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
-        {workspace.metrics.map((metric) => (
-          <article className="rounded-md border bg-card p-4" key={metric.label}>
-            <div className="text-sm text-muted-foreground">{metric.label}</div>
-            <div className="mt-2 text-2xl font-semibold tracking-normal">
-              {metric.value}
+      <section className="grid gap-3">
+        <div className="text-sm font-medium">Lectura en 10 segundos</div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {workspace.metrics.map((metric) => (
+            <article className="rounded-md border bg-card p-4" key={metric.label}>
+              <div className="text-sm text-muted-foreground">{metric.label}</div>
+              <div className="mt-2 text-2xl font-semibold tracking-normal">
+                {metric.value}
+              </div>
+              <Badge className="mt-3 bg-emerald-50 text-emerald-800 hover:bg-emerald-50">
+                {metric.note}
+              </Badge>
+            </article>
+          ))}
+          <article className="rounded-md border border-primary/30 bg-primary/5 p-4">
+            <div className="text-sm text-muted-foreground">Accion inicial</div>
+            <div className="mt-2 text-lg font-semibold tracking-normal">
+              {workspace.primaryLabel}
             </div>
-            <Badge className="mt-3 bg-emerald-50 text-emerald-800 hover:bg-emerald-50">
-              {metric.note}
-            </Badge>
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">
+              Entrar por la pantalla recomendada antes de abrir dashboards de
+              detalle.
+            </p>
           </article>
-        ))}
-      </div>
+        </div>
+      </section>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
         <section className="rounded-md border bg-card p-4">

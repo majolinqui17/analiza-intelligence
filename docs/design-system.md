@@ -49,6 +49,10 @@ The shell should reduce cognitive load by role:
 
 Large line-of-business presentations should not become endless dashboard pages. Prefer cockpit views with tabs or guided sections: resumen, causas, plan, decisiones, and trazabilidad.
 
+Every role should enter through a role workspace before detailed dashboards. The first screen must answer: what is happening, what needs review, what action is expected, and what data is missing. The sidebar should expose only essential modules for that role; deeper diagnostics remain accessible through drilldowns, tabs, or the role's recommended action.
+
+Dense dashboards such as profesionales, servicios, gerentes y bonos, laboratorio, imagenes, insights and importaciones must use progressive disclosure. Put KPIs and the executive read first, then comparison charts, then detail tables, then rules/audit. Do not render every table, matrix and narrative in one continuous page.
+
 Administrative forms that include wide tables, such as usuarios y permisos, should stack the form above the table or use a full-width form grid. Do not place a narrow form beside a wide table when selectors contain long role, branch, area, or business-line names.
 
 Operational KPI groups should pair numeric lists with compact trend charts when the decision depends on time movement. The chart must show date labels, the current period, a comparison period, and point-level values through hover/title metadata.
