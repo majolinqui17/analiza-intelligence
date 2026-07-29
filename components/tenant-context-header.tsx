@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Globe2,
   MapPin,
+  SlidersHorizontal,
   UsersRound,
 } from "lucide-react";
 
@@ -73,6 +74,19 @@ function readStoredContext() {
   }
 }
 
+function formatPeriodLabel(periodStart: string, periodEnd: string) {
+  if (periodStart.slice(0, 7) === periodEnd.slice(0, 7)) {
+    return new Intl.DateTimeFormat("es-SV", {
+      month: "short",
+      year: "numeric",
+    })
+      .format(new Date(`${periodStart}T00:00:00`))
+      .replace(".", "");
+  }
+
+  return `${periodStart} a ${periodEnd}`;
+}
+
 export function TenantContextHeader() {
   const [countryId, setCountryId] = useState(getInitialCountryId());
   const [companyId, setCompanyId] = useState("");
@@ -83,6 +97,7 @@ export function TenantContextHeader() {
   const [managerId, setManagerId] = useState(allManagersValue);
   const [periodStart, setPeriodStart] = useState(`${getDefaultPeriod()}-01`);
   const [periodEnd, setPeriodEnd] = useState(`${getDefaultPeriod()}-31`);
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const selectedCountry = demoCountryOptions.find(
     (country) => country.id === countryId,
   );
@@ -253,9 +268,18 @@ export function TenantContextHeader() {
     setBranchId(allBranchesValue);
   }
 
+  const selectedBranch = demoBranches.find((item) => item.id === branchId);
+  const branchName =
+    selectedBranch?.name ??
+    (selectedCountry?.scope === "regional"
+      ? "Todas las sucursales de la region"
+      : "Todas las sucursales");
+  const periodLabel = formatPeriodLabel(periodStart, periodEnd);
+
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-2 lg:flex-row lg:items-start">
-      <div className="grid min-w-72 gap-2">
+    <div className="grid min-w-0 flex-1 gap-2">
+      <div className="flex min-w-0 flex-col gap-2 xl:flex-row xl:items-start">
+        <div className="grid min-w-72 gap-2 sm:grid-cols-2 xl:grid-cols-1">
         <label className="grid gap-1 rounded-md border-2 border-primary/50 bg-accent px-3 py-2 text-xs shadow-sm">
           <span className="font-semibold uppercase text-primary">
             Linea de negocio activa
@@ -295,66 +319,99 @@ export function TenantContextHeader() {
             </select>
           </span>
         </label>
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-2 rounded-md border bg-background px-3 py-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-[0.68rem] font-semibold uppercase tracking-normal text-muted-foreground">
+                Contexto activo
+              </div>
+              <div className="truncate text-sm font-medium">
+                {selectedCountry?.name ?? "Vista regional"} ·{" "}
+                {selectedCompany?.name ?? "Vista consolidada"} · {branchName} ·{" "}
+                {periodLabel}
+              </div>
+            </div>
+            <button
+              className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              onClick={() => setAdvancedFiltersOpen((isOpen) => !isOpen)}
+              type="button"
+            >
+              <SlidersHorizontal className="size-3.5" />
+              Cambiar filtros
+            </button>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {selectedManager.name} · DEMO · filtros avanzados{" "}
+            {advancedFiltersOpen ? "visibles" : "colapsados"}
+          </div>
+        </div>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-        <label className="flex h-10 items-center gap-2 rounded-md border bg-background px-2 text-xs">
-          <MapPin className="size-3.5 text-muted-foreground" />
-          <select
-            className="min-w-44 bg-transparent outline-none"
-            value={branchId}
-            onChange={(event) => setBranchId(event.target.value)}
-          >
-            <option value={allBranchesValue}>
-              {selectedCountry?.scope === "regional"
-                ? "Todas las sucursales de la region"
-                : "Todas las sucursales"}
-            </option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
+      {advancedFiltersOpen ? (
+        <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-md border bg-background p-2">
+          <div className="px-2 text-xs font-semibold text-muted-foreground">
+            Filtros avanzados
+          </div>
+          <label className="flex h-10 items-center gap-2 rounded-md border bg-muted/40 px-2 text-xs">
+            <MapPin className="size-3.5 text-muted-foreground" />
+            <select
+              className="min-w-44 bg-transparent outline-none"
+              value={branchId}
+              onChange={(event) => setBranchId(event.target.value)}
+            >
+              <option value={allBranchesValue}>
+                {selectedCountry?.scope === "regional"
+                  ? "Todas las sucursales de la region"
+                  : "Todas las sucursales"}
               </option>
-            ))}
-          </select>
-        </label>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="flex h-10 items-center gap-2 rounded-md border bg-background px-2 text-xs">
-          <UsersRound className="size-3.5 text-muted-foreground" />
-          <select
-            className="min-w-40 bg-transparent outline-none"
-            value={managerId}
-            onChange={(event) => setManagerId(event.target.value)}
-          >
-            {managerOptions.map((manager) => (
-              <option key={manager.id} value={manager.id}>
-                {manager.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label className="flex h-10 items-center gap-2 rounded-md border bg-muted/40 px-2 text-xs">
+            <UsersRound className="size-3.5 text-muted-foreground" />
+            <select
+              className="min-w-40 bg-transparent outline-none"
+              value={managerId}
+              onChange={(event) => setManagerId(event.target.value)}
+            >
+              {managerOptions.map((manager) => (
+                <option key={manager.id} value={manager.id}>
+                  {manager.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="flex h-10 items-center gap-2 rounded-md border bg-background px-2 text-xs">
-          <CalendarDays className="size-3.5 text-muted-foreground" />
-          <input
-            aria-label="Fecha desde"
-            className="w-28 bg-transparent outline-none"
-            type="date"
-            value={periodStart}
-            onChange={(event) => setPeriodStart(event.target.value)}
-          />
-        </label>
+          <label className="flex h-10 items-center gap-2 rounded-md border bg-muted/40 px-2 text-xs">
+            <CalendarDays className="size-3.5 text-muted-foreground" />
+            <input
+              aria-label="Fecha desde"
+              className="w-28 bg-transparent outline-none"
+              type="date"
+              value={periodStart}
+              onChange={(event) => setPeriodStart(event.target.value)}
+            />
+          </label>
 
-        <label className="flex h-10 items-center gap-2 rounded-md border bg-background px-2 text-xs">
-          <CalendarDays className="size-3.5 text-muted-foreground" />
-          <input
-            aria-label="Fecha hasta"
-            className="w-28 bg-transparent outline-none"
-            type="date"
-            value={periodEnd}
-            onChange={(event) => setPeriodEnd(event.target.value)}
-          />
-        </label>
-      </div>
+          <label className="flex h-10 items-center gap-2 rounded-md border bg-muted/40 px-2 text-xs">
+            <CalendarDays className="size-3.5 text-muted-foreground" />
+            <input
+              aria-label="Fecha hasta"
+              className="w-28 bg-transparent outline-none"
+              type="date"
+              value={periodEnd}
+              onChange={(event) => setPeriodEnd(event.target.value)}
+            />
+          </label>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -17,7 +17,7 @@ export default function ProtectedLayout({
           <nav className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
             <div className="flex min-h-16 w-full flex-col gap-3 px-4 py-3 text-sm lg:flex-row lg:items-start lg:justify-between lg:px-5">
               <Link
-                href="/protected/overview"
+                href="/protected"
                 className="font-semibold lg:hidden"
               >
                 Analiza Intelligence

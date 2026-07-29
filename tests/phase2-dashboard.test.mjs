@@ -21,6 +21,7 @@ const contextSelectionFormPath = "components/context-selection-form.tsx";
 const contextDataPath = "lib/tenant/demo-context.ts";
 const businessModulesPath = "lib/analytics/demo-business-modules.ts";
 const appSidebarPath = "components/app-sidebar.tsx";
+const roleHomeComponentPath = "components/role-workspace-home.tsx";
 const elSalvadorTemplatesPath =
   "lib/analytics/el-salvador-result-templates.ts";
 const kpiRegistryPath = "lib/analytics/kpi-registry.ts";
@@ -48,6 +49,7 @@ for (const file of [
   contextDataPath,
   businessModulesPath,
   appSidebarPath,
+  roleHomeComponentPath,
   elSalvadorTemplatesPath,
   kpiRegistryPath,
   businessLineOperationsPath,
@@ -94,6 +96,7 @@ const contextSelectionForm = readFileSync(contextSelectionFormPath, "utf8");
 const contextData = readFileSync(contextDataPath, "utf8");
 const businessModules = readFileSync(businessModulesPath, "utf8");
 const appSidebar = readFileSync(appSidebarPath, "utf8");
+const roleHomeComponent = readFileSync(roleHomeComponentPath, "utf8");
 const elSalvadorTemplates = readFileSync(elSalvadorTemplatesPath, "utf8");
 const kpiRegistry = readFileSync(kpiRegistryPath, "utf8");
 const businessLineOperations = readFileSync(
@@ -139,6 +142,27 @@ for (const title of requiredNavigationTitles) {
 
 if (!navigation.includes("getNavigationForRole")) {
   throw new Error("Navigation must expose role-aware filtering.");
+}
+
+if (!navigation.includes("navigationGroups")) {
+  throw new Error("Navigation must expose grouped work sections.");
+}
+
+if (!navigation.includes("getGroupedNavigationForRole")) {
+  throw new Error("Navigation must expose grouped role navigation.");
+}
+
+for (const requiredNavigationGroup of [
+  "Direccion",
+  "Operacion",
+  "Gestion",
+  "Lineas de negocio",
+  "Datos",
+  "Sistema",
+]) {
+  if (!navigation.includes(`title: "${requiredNavigationGroup}"`)) {
+    throw new Error(`Navigation group is missing: ${requiredNavigationGroup}`);
+  }
 }
 
 for (const requiredRole of [
@@ -246,9 +270,24 @@ for (const requiredSidebarText of [
   "demoRoleProfiles",
   "analiza:demo-role",
   "modulos visibles",
+  "getGroupedNavigationForRole",
+  "group.title",
 ]) {
   if (!appSidebar.includes(requiredSidebarText)) {
     throw new Error(`Sidebar role switcher is missing: ${requiredSidebarText}`);
+  }
+}
+
+for (const requiredRoleHomeText of [
+  "Bandeja de trabajo",
+  "Que necesita decidir o completar este rol ahora",
+  "Acceso recomendado",
+  "Atajos por rol",
+  "Cierres pendientes",
+  "Completar cierre mensual",
+]) {
+  if (!roleHomeComponent.includes(requiredRoleHomeText)) {
+    throw new Error(`Role home is missing: ${requiredRoleHomeText}`);
   }
 }
 
@@ -257,6 +296,9 @@ if (!contextHeader.includes("analiza:selected-context")) {
 }
 
 for (const requiredContextText of [
+  "Contexto activo",
+  "Cambiar filtros",
+  "Filtros avanzados",
   "Fecha desde",
   "Fecha hasta",
   "analiza:context-change",

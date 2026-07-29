@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { RoleWorkspaceHome } from "@/components/role-workspace-home";
 
 export default function ProtectedPage() {
-  redirect("/protected/context");
+  return <RoleWorkspaceHome />;
 }

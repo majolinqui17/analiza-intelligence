@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
+  getGroupedNavigationForRole,
   getNavigationForRole,
   navigationItems,
   type NavigationItem,
@@ -35,6 +36,7 @@ export function AppSidebar({ roleKey }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [activeRole, setActiveRole] = useState<RoleKey>(roleKey);
   const visibleItems = getNavigationForRole(activeRole);
+  const visibleGroups = getGroupedNavigationForRole(activeRole);
   const roleProfile = demoRoleProfiles[activeRole];
 
   useEffect(() => {
@@ -92,29 +94,42 @@ export function AppSidebar({ roleKey }: AppSidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <div className="grid gap-1">
-          {visibleItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(pathname, item);
-
-            return (
-              <Link
+        <div className="grid gap-4">
+          {visibleGroups.map((group) => (
+            <section className="grid gap-1" key={group.key}>
+              <div
                 className={cn(
-                  "flex h-10 items-center gap-3 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-                  active && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-                  collapsed && "justify-center px-0",
+                  "px-3 text-[0.68rem] font-semibold uppercase tracking-normal text-muted-foreground",
+                  collapsed && "sr-only",
                 )}
-                href={item.href}
-                key={item.href}
-                title={item.title}
               >
-                <Icon className="size-4 shrink-0" />
-                <span className={cn(collapsed && "sr-only")}>
-                  {item.title}
-                </span>
-              </Link>
-            );
-          })}
+                {group.title}
+              </div>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(pathname, item);
+
+                return (
+                  <Link
+                    className={cn(
+                      "flex h-10 items-center gap-3 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+                      active &&
+                        "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                      collapsed && "justify-center px-0",
+                    )}
+                    href={item.href}
+                    key={item.href}
+                    title={`${group.title}: ${item.title}`}
+                  >
+                    <Icon className="size-4 shrink-0" />
+                    <span className={cn(collapsed && "sr-only")}>
+                      {item.title}
+                    </span>
+                  </Link>
+                );
+              })}
+            </section>
+          ))}
         </div>
       </nav>
 

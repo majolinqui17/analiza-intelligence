@@ -37,6 +37,18 @@ Line colors identify scope; they do not replace semantic colors. Red remains ris
 
 Phase 2 uses a dense executive shell: collapsible sidebar, compact header filters, small KPI cards, and simple 2D bar visualizations. This keeps the BI surface scannable in meetings and avoids misleading decorative charts.
 
+## Role-Based Reading
+
+The shell should reduce cognitive load by role:
+
+- Use grouped navigation instead of a flat module list.
+- Keep the role workspace home as the first operational screen.
+- Show only essential modules for each role; deeper dashboards should be drilldowns, not default navigation.
+- Open every screen with 3 to 5 key signals, one primary alert, and one clear next action before detailed tables.
+- Keep global filters as a compact context bar. Put branch, manager, dates, and secondary filters in `Cambiar filtros` or local `Filtros avanzados`.
+
+Large line-of-business presentations should not become endless dashboard pages. Prefer cockpit views with tabs or guided sections: resumen, causas, plan, decisiones, and trazabilidad.
+
 ## Branding
 
 Do not invent the logo. Provide configurable slots for:
