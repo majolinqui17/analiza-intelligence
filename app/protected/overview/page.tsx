@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { ExecutiveDashboard } from "@/components/executive-dashboard";
 import { demoAdminCookieName, hasDemoAdminCookie } from "@/lib/auth/demo-admin";
 import { createClient } from "@/lib/supabase/server";
+import { hasEnvVars } from "@/lib/utils";
 
 async function OverviewGate() {
   const cookieStore = await cookies();
@@ -16,8 +17,15 @@ async function OverviewGate() {
     return <ExecutiveDashboard />;
   }
 
+  if (!hasEnvVars) {
+    redirect("/auth/login");
+  }
+
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
+  const { data, error } = await supabase.auth.getClaims().catch(() => ({
+    data: null,
+    error: new Error("Supabase claims unavailable"),
+  }));
 
   if (error || !data?.claims) {
     redirect("/auth/login");

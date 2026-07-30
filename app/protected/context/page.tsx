@@ -15,6 +15,7 @@ import {
   demoCompanyOptions,
   demoCountryOptions,
 } from "@/lib/tenant/demo-context";
+import { hasEnvVars } from "@/lib/utils";
 
 function getClaimString(claims: unknown, key: string) {
   if (typeof claims !== "object" || claims === null) {
@@ -43,8 +44,15 @@ async function ContextSelectionGate() {
     );
   }
 
+  if (!hasEnvVars) {
+    redirect("/auth/login");
+  }
+
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
+  const { data, error } = await supabase.auth.getClaims().catch(() => ({
+    data: null,
+    error: new Error("Supabase claims unavailable"),
+  }));
 
   if (error || !data?.claims) {
     redirect("/auth/login");
