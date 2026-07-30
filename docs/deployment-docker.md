@@ -2,6 +2,8 @@
 
 Analiza Intelligence es una app Next.js. Para llevarla a un servidor, se construye una imagen Docker, se publica en Docker Hub y el servidor ejecuta esa imagen con variables de entorno reales.
 
+El modo `standalone` de Next.js se activa solo durante la construccion Docker usando `BUILD_STANDALONE=true`. En plataformas como Vercel o Netlify, la app se construye con el flujo normal de Next.js.
+
 ## 1. Preparar el entorno
 
 1. Copiar `.env.docker.example` como `.env.docker`.
