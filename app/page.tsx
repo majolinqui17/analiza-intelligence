@@ -37,7 +37,9 @@ export default function Home() {
               </h1>
               <p className="max-w-2xl text-base leading-7 text-muted-foreground">
                 Centralizacion segura para datos operativos y financieros de
-                Analiza Fisioterapia, Laboratorio e Imagenes en Centroamerica.
+                Analiza Fisioterapia, Analiza Laboratorio y Analiza Imagenes,
+                disenada para CEO, gerente de operaciones y gerentes de
+                sucursal.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -45,14 +47,20 @@ export default function Home() {
                 <Link href="/auth/login">Ingresar</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/protected/context">Seleccionar contexto</Link>
+                <Link href="/auth/sign-up">Crear cuenta</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/auth/demo-admin">Admin DEMO</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/protected/context">Ver dashboard ejecutivo</Link>
               </Button>
             </div>
           </div>
 
           <div className="rounded-md border bg-background p-5">
             <div className="mb-4 text-sm font-medium">
-              Alcance inicial DEMO
+              Panel ejecutivo DEMO
             </div>
             <dl className="grid gap-4 text-sm">
               <div className="flex items-start gap-3">
@@ -60,7 +68,7 @@ export default function Home() {
                 <div>
                   <dt className="font-medium">Acceso protegido</dt>
                   <dd className="text-muted-foreground">
-                    Login, recuperacion, cierre de sesion y rutas protegidas.
+                    Entrada para webmaster/admin, CEO, operaciones y sucursal.
                   </dd>
                 </div>
               </div>
@@ -69,7 +77,7 @@ export default function Home() {
                 <div>
                   <dt className="font-medium">Modelo multi-tenant</dt>
                   <dd className="text-muted-foreground">
-                    Pais, empresa, sucursal, roles y asignaciones.
+                    Vista regional, pais, empresa, sucursal y periodo.
                   </dd>
                 </div>
               </div>
@@ -78,7 +86,7 @@ export default function Home() {
                 <div>
                   <dt className="font-medium">Base Supabase</dt>
                   <dd className="text-muted-foreground">
-                    Migraciones, RLS y seed DEMO versionados.
+                    Fisioterapia, Laboratorio e Imagenes en un solo panel.
                   </dd>
                 </div>
               </div>

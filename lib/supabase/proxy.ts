@@ -1,11 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { demoAdminCookieName, hasDemoAdminCookie } from "@/lib/auth/demo-admin";
 import { hasEnvVars } from "../utils";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
+
+  const hasDemoAdminSession = hasDemoAdminCookie(
+    request.cookies.get(demoAdminCookieName)?.value,
+  );
 
   // If the env vars are not set, skip proxy check. You can remove this
   // once you setup the project.
@@ -50,6 +55,7 @@ export async function updateSession(request: NextRequest) {
   if (
     request.nextUrl.pathname !== "/" &&
     !user &&
+    !hasDemoAdminSession &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth")
   ) {

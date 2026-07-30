@@ -243,11 +243,11 @@ create policy "data roles manage professionals" on public.professionals
 for all to authenticated
 using (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 )
 with check (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 );
 
 create policy "read assigned professional schedules" on public.professional_schedules
@@ -258,11 +258,11 @@ create policy "data roles manage professional schedules" on public.professional_
 for all to authenticated
 using (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 )
 with check (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 );
 
 create policy "read anonymous patients by organization" on public.anonymous_patients
@@ -273,11 +273,11 @@ create policy "data roles manage anonymous patients" on public.anonymous_patient
 for all to authenticated
 using (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 )
 with check (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 );
 
 create policy "read assigned appointments" on public.appointments
@@ -288,11 +288,11 @@ create policy "data roles manage appointments" on public.appointments
 for all to authenticated
 using (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 )
 with check (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 );
 
 create policy "read assigned appointment history" on public.appointment_status_history
@@ -310,11 +310,11 @@ create policy "data roles manage appointment history" on public.appointment_stat
 for all to authenticated
 using (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 )
 with check (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 );
 
 create policy "read assigned capacity records" on public.capacity_records
@@ -325,11 +325,11 @@ create policy "data roles manage capacity records" on public.capacity_records
 for all to authenticated
 using (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 )
 with check (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 );
 
 create policy "read assigned service events" on public.service_events
@@ -340,9 +340,9 @@ create policy "data roles manage service events" on public.service_events
 for all to authenticated
 using (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 )
 with check (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['analista_bi', 'cargador_datos'])
+  or public.current_user_has_role(array['gerente_operaciones'])
 );

@@ -23,12 +23,12 @@ Implemented in the Phase 1 baseline:
 - `supabase/seed.sql`
 - protected context selection at `/protected/context`
 - protected overview handoff at `/protected/overview`
-- public sign-up disabled in visible UI
+- public self-registration disabled; visible `Crear cuenta` points to controlled provisioning
 
 Next Phase 1 hardening before production:
 
 - replace DEMO bootstrap context with live Supabase assignment queries
-- add a controlled first `super_admin` setup command or server-only action
+- add a controlled first `webmaster_admin` setup command or server-only action
 - add database-level tests against a local Supabase instance
 
 ## Phase 2: Layout, Navigation, Filters, DEMO Executive Dashboard
@@ -42,9 +42,10 @@ Implemented in the Phase 2 baseline:
 
 - protected app shell with collapsible sidebar
 - role-aware navigation definition with 21 requested modules
-- persistent header selector for country, company, branch, and period
-- executive DEMO dashboard at `/protected/overview`
-- placeholder protected module route for future phases
+- four-role Analiza model: Webmaster / Administrador, CEO, Gerente de operaciones, Gerente de sucursal
+- persistent header selector for region/country, consolidated/business unit, branch, and date range
+- executive DEMO dashboard at `/protected/overview` with financial and operational health by business
+- shared protected module route that renders DEMO module dashboards
 - dashboard tests for navigation coverage, DEMO labels, and starter removal
 
 ## Phase 3: Appointments, Capacity, Occupancy, Branches, Managers
@@ -61,6 +62,16 @@ Implemented in the Phase 3 baseline:
 - pure TypeScript formulas for occupancy, attendance gap, completion, cancellation, no-show, and reschedule rates
 - DEMO views for `/protected/citas`, `/protected/capacidad`, `/protected/sucursales`, and `/protected/gerentes`
 - tests for formulas, migration coverage, and manager data sufficiency messaging
+
+Executive DEMO expansion now also includes:
+
+- operation, finance, professionals, services, fisioterapia, laboratorio, imagenes, insights, imports, templates, connectors, data quality, goals, users, account, and audit panels
+- appointments by business and success rate by business/branch
+- capacity by business/branch with prior month, current month, and goal
+- branch manager view with result templates, goals, sales, losses, revenue, operating costs, appointments, and quality
+- manager organization view and employee performance for bonus review
+- suggested goals with CEO final approval concept
+- audit recommendations for imports, goals, permissions, connector runs, exports, and KPI traceability
 
 ## Phase 4: Fisioterapia, Laboratorio, Imagenes
 

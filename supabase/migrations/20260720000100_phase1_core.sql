@@ -284,7 +284,7 @@ as $$
     from public.user_roles ur
     join public.roles r on r.id = ur.role_id
     where ur.user_id = auth.uid()
-      and r.key = 'super_admin'
+      and r.key = 'webmaster_admin'
   );
 $$;
 
@@ -376,7 +376,7 @@ as $$
       join public.roles r on r.id = ur.role_id
       where ur.user_id = auth.uid()
         and c.id = target_country_id
-        and r.key in ('director_ejecutivo_grupo', 'director_pais', 'analista_bi', 'auditor')
+        and r.key in ('ceo', 'gerente_operaciones')
         and (ur.country_id is null or ur.country_id = target_country_id)
     );
 $$;
@@ -407,7 +407,7 @@ as $$
       from public.user_roles ur
       join public.roles r on r.id = ur.role_id
       where ur.user_id = auth.uid()
-        and r.key in ('director_ejecutivo_grupo', 'director_empresa', 'director_financiero', 'director_operaciones', 'analista_bi', 'auditor')
+        and r.key in ('ceo', 'gerente_operaciones')
         and (ur.company_id is null or ur.company_id = target_company_id)
     );
 $$;
@@ -440,7 +440,7 @@ as $$
       from public.user_roles ur
       join public.roles r on r.id = ur.role_id
       where ur.user_id = auth.uid()
-        and r.key in ('director_ejecutivo_grupo', 'director_pais', 'director_empresa', 'director_financiero', 'director_operaciones', 'analista_bi', 'auditor')
+        and r.key in ('ceo', 'gerente_operaciones', 'gerente_sucursal')
         and (ur.branch_id is null or ur.branch_id = target_branch_id)
     );
 $$;
@@ -630,7 +630,7 @@ create policy "auditors and admins read audit logs" on public.audit_logs
 for select to authenticated
 using (
   public.current_user_is_super_admin()
-  or public.current_user_has_role(array['auditor', 'analista_bi'])
+  or public.current_user_has_role(array['ceo'])
 );
 
 create policy "authenticated users insert audit logs" on public.audit_logs

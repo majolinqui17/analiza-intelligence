@@ -1,44 +1,58 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
   CheckCircle2,
   CircleDollarSign,
   Database,
-  Info,
+  LineChart,
+  Target,
   TrendingUp,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
-  appointmentStatus,
   demoDashboardMeta,
-  executiveKpis,
+  getAppointmentStatusByLine,
+  getBusinessLinesForDashboard,
+  getManagerPerformanceByLine,
+  getOccupancyByLine,
+  getRevenueShareData,
+  getTargetVsActualByLine,
   insightPreviews,
-  managerPerformance,
-  occupancyByUnit,
-  revenueByCompany,
-  revenueByMonth,
-  targetVsActual,
   type BarPoint,
-  type ExecutiveKpi,
+  type BusinessLineDashboard,
+  type BusinessLineKey,
+  type BusinessLineStatus,
 } from "@/lib/analytics/demo-dashboard";
 import { cn } from "@/lib/utils";
 
 const storageKey = "analiza:selected-context";
+const contextChangeEvent = "analiza:context-change";
 
 type StoredContext = {
+  countryId?: string;
   countryName: string;
+  companyId?: string;
   companyName: string;
+  businessLineId?: string;
+  businessLineName?: string;
+  businessLineCode?: string;
+  branchId?: string;
   branchName: string;
-  period: string;
+  period?: string;
+  periodStart?: string;
+  periodEnd?: string;
   isDemo: boolean;
 };
 
 function readStoredContext() {
-  const rawContext = window.localStorage.getItem(storageKey);
+  const rawContext =
+    window.localStorage.getItem(storageKey) ??
+    window.sessionStorage.getItem(storageKey);
+
   if (!rawContext) {
     return null;
   }
@@ -47,24 +61,97 @@ function readStoredContext() {
     return JSON.parse(rawContext) as StoredContext;
   } catch {
     window.localStorage.removeItem(storageKey);
+    window.sessionStorage.removeItem(storageKey);
     return null;
   }
 }
 
-function kpiToneClass(tone: ExecutiveKpi["tone"]) {
-  if (tone === "positive") {
-    return "text-emerald-700 bg-emerald-50";
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(value);
+}
+
+function formatCompactCurrency(value: number) {
+  if (value >= 1000) {
+    return `$${Math.round(value / 1000).toLocaleString("en-US")}K`;
   }
 
-  if (tone === "warning") {
-    return "text-amber-700 bg-amber-50";
+  return formatCurrency(value);
+}
+
+function formatPercent(value: number) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatSignedPercent(value: number) {
+  return `${value > 0 ? "+" : ""}${value}%`;
+}
+
+function formatSignedPoints(value: number) {
+  return `${value > 0 ? "+" : ""}${value} pts`;
+}
+
+function statusLabel(status: BusinessLineStatus) {
+  if (status === "verde") {
+    return "Verde";
   }
 
-  if (tone === "negative") {
-    return "text-red-700 bg-red-50";
+  if (status === "amarillo") {
+    return "Amarillo";
   }
 
-  return "text-muted-foreground bg-muted";
+  return "Rojo";
+}
+
+function statusClass(status: BusinessLineStatus) {
+  if (status === "verde") {
+    return "bg-emerald-100 text-emerald-800 hover:bg-emerald-100";
+  }
+
+  if (status === "amarillo") {
+    return "bg-amber-100 text-amber-800 hover:bg-amber-100";
+  }
+
+  return "bg-red-100 text-red-800 hover:bg-red-100";
+}
+
+function getOperationalStatusTitle(line: BusinessLineDashboard | null) {
+  if (line?.key === "laboratorio") {
+    return "Ordenes y pacientes";
+  }
+
+  if (line?.key === "imagenes") {
+    return "Estudios por estado";
+  }
+
+  return "Citas por estado";
+}
+
+function getOperationalSuccessLabel(line: BusinessLineDashboard) {
+  if (line.key === "laboratorio") {
+    return "Ordenes con paciente";
+  }
+
+  if (line.key === "imagenes") {
+    return "Estudios realizados";
+  }
+
+  return "Exito de citas";
+}
+
+function getServiceVolumeLabel(line: BusinessLineDashboard) {
+  if (line.key === "laboratorio") {
+    return "Pruebas / ordenes";
+  }
+
+  if (line.key === "imagenes") {
+    return "Estudios / informes";
+  }
+
+  return "Servicios / sesiones";
 }
 
 function BarList({
@@ -85,7 +172,7 @@ function BarList({
               {item.label}
             </span>
             <span className="font-medium">
-              {item.value}
+              {item.value.toLocaleString("en-US")}
               {suffix}
             </span>
           </div>
@@ -101,44 +188,398 @@ function BarList({
   );
 }
 
-function KpiCard({ kpi }: { kpi: ExecutiveKpi }) {
+function ExecutiveStatusTable({ lines }: { lines: BusinessLineDashboard[] }) {
+  const orderedLines = [...lines].sort((firstLine, secondLine) => {
+    const order: Record<BusinessLineKey, number> = {
+      imagenes: 0,
+      fisioterapia: 1,
+      laboratorio: 2,
+    };
+
+    return order[firstLine.key] - order[secondLine.key];
+  });
+
   return (
-    <article
-      className="flex min-h-36 flex-col justify-between rounded-md border bg-card p-4"
-      title={`Definicion: ${kpi.definition}\nFormula: ${kpi.formula}\nFuente: ${kpi.source}\nUltima actualizacion: ${kpi.updatedAt}`}
-    >
+    <section className="grid gap-4 rounded-md border bg-card p-4">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-lg font-semibold tracking-normal">
+          Estado general de las lineas
+        </h2>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Lo primero que ve el CEO: comparacion por ingresos, crecimiento,
+          margen, ocupacion, pacientes, ticket y estado.
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[860px] text-left text-sm">
+          <thead className="text-xs text-muted-foreground">
+            <tr className="border-b">
+              <th className="py-2 pr-4 font-medium">Linea</th>
+              <th className="py-2 pr-4 font-medium">Ingresos</th>
+              <th className="py-2 pr-4 font-medium">Crecimiento</th>
+              <th className="py-2 pr-4 font-medium">Margen</th>
+              <th className="py-2 pr-4 font-medium">Ocupacion</th>
+              <th className="py-2 pr-4 font-medium">Pacientes</th>
+              <th className="py-2 pr-4 font-medium">Ticket</th>
+              <th className="py-2 pr-4 font-medium">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orderedLines.map((line) => (
+              <tr className="border-b last:border-b-0" key={line.key}>
+                <td className="py-3 pr-4 font-medium">{line.shortName}</td>
+                <td className="py-3 pr-4">{formatCompactCurrency(line.revenue)}</td>
+                <td className="py-3 pr-4">
+                  {formatSignedPercent(line.revenueGrowthRate)}
+                </td>
+                <td className="py-3 pr-4">
+                  <div className="font-medium">{formatPercent(line.marginRate)}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatSignedPoints(line.marginDeltaPoints)}
+                  </div>
+                </td>
+                <td className="py-3 pr-4">{line.effectiveOccupancy}%</td>
+                <td className="py-3 pr-4">
+                  {line.patientCount.toLocaleString("en-US")}
+                </td>
+                <td className="py-3 pr-4">
+                  {formatCurrency(line.averageTicket)}
+                </td>
+                <td className="py-3 pr-4">
+                  <Badge className={statusClass(line.executiveStatus)}>
+                    {statusLabel(line.executiveStatus)}
+                  </Badge>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="grid gap-2">
+        {orderedLines.map((line) => (
+          <p
+            className="rounded-md bg-muted px-3 py-2 text-sm leading-6 text-muted-foreground"
+            key={`${line.key}-interpretation`}
+          >
+            <span className="font-medium text-foreground">{line.shortName}: </span>
+            {line.executiveInterpretation}
+          </p>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HealthBar({ label, value }: { label: string; value: number }) {
+  const safeWidth = Math.max(0, Math.min(value, 100));
+
+  return (
+    <div className="grid gap-1">
+      <div className="flex items-center justify-between gap-3 text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">{value}%</span>
+      </div>
+      <div className="h-2 rounded-full bg-muted">
+        <div className="h-2 rounded-full bg-primary" style={{ width: `${safeWidth}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function BusinessLineSummaryCard({ line }: { line: BusinessLineDashboard }) {
+  const goalCompletion = line.revenue / line.revenueTarget;
+  const operationalSuccess =
+    line.scheduledAppointments > 0
+      ? line.completedAppointments / line.scheduledAppointments
+      : 0;
+
+  return (
+    <article className="grid min-h-72 gap-4 rounded-md border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="grid gap-1">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            {kpi.label}
-          </h3>
-          <p className="text-2xl font-semibold tracking-normal">{kpi.value}</p>
+          <h2 className="text-base font-semibold">{line.companyName}</h2>
+          <p className="text-xs text-muted-foreground">{line.scopeName}</p>
         </div>
-        <Info className="size-4 shrink-0 text-muted-foreground" />
+        <Badge variant="outline">{line.sourceNote}</Badge>
       </div>
-      <div className="flex items-center justify-between gap-3">
-        <span
-          className={cn(
-            "rounded-md px-2 py-1 text-xs font-medium",
-            kpiToneClass(kpi.tone),
-          )}
-        >
-          {kpi.change}
-        </span>
-        <span className="truncate text-xs text-muted-foreground">
-          {kpi.source}
-        </span>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <div className="text-xs text-muted-foreground">Venta</div>
+          <div className="text-2xl font-semibold tracking-normal">
+            {formatCompactCurrency(line.revenue)}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground">Meta</div>
+          <div className="text-2xl font-semibold tracking-normal">
+            {formatCompactCurrency(line.revenueTarget)}
+          </div>
+        </div>
       </div>
+
+      <div className="grid gap-2">
+        <HealthBar label="Cumplimiento meta" value={Math.round(goalCompletion * 100)} />
+        <HealthBar label="Salud operativa" value={line.operatingHealth} />
+        <HealthBar label="Ocupacion efectiva" value={line.effectiveOccupancy} />
+      </div>
+
+      <div className="grid gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center justify-between gap-3">
+          <span>Margen</span>
+          <span className="font-medium text-foreground">
+            {formatPercent(line.marginRate)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span>{getOperationalSuccessLabel(line)}</span>
+          <span className="font-medium text-foreground">
+            {formatPercent(operationalSuccess)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span>{getServiceVolumeLabel(line)}</span>
+          <span className="font-medium text-foreground">
+            {line.serviceVolume.toLocaleString("en-US")}
+          </span>
+        </div>
+      </div>
+
+      <p className="rounded-md bg-amber-50 p-3 text-xs leading-5 text-amber-800">
+        {line.alert}
+      </p>
     </article>
+  );
+}
+
+function BusinessLineSummary({ lines }: { lines: BusinessLineDashboard[] }) {
+  return (
+    <section className="grid gap-4">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-lg font-semibold tracking-normal">
+          1. Resumen por linea de negocio
+        </h2>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Sin total mezclado: cada linea mantiene su venta, meta, margen, citas
+          y ocupacion para no leer una suma que no representa la realidad.
+        </p>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-3">
+        {lines.map((line) => (
+          <BusinessLineSummaryCard key={`${line.key}-${line.scopeName}`} line={line} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FinancialHealthByLine({ lines }: { lines: BusinessLineDashboard[] }) {
+  return (
+    <section className="rounded-md border bg-card p-4">
+      <div className="mb-4 flex items-center gap-2 text-sm font-medium">
+        <CircleDollarSign className="size-4 text-primary" />
+        Salud financiera de las lineas del negocio
+      </div>
+      <div className="grid gap-4 xl:grid-cols-3">
+        {lines.map((line) => (
+          <article className="grid gap-3 rounded-md border p-3" key={line.companyName}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">{line.shortName}</h3>
+                <p className="text-xs text-muted-foreground">{line.scopeName}</p>
+              </div>
+              <Badge
+                className={cn(
+                  line.financialHealth >= 85 &&
+                    "bg-emerald-100 text-emerald-800 hover:bg-emerald-100",
+                  line.financialHealth < 85 &&
+                    "bg-amber-100 text-amber-800 hover:bg-amber-100",
+                )}
+              >
+                {line.financialHealth}%
+              </Badge>
+            </div>
+            <HealthBar label="Salud financiera" value={line.financialHealth} />
+            <dl className="grid gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between gap-3">
+                <dt>Ingresos cobrados</dt>
+                <dd className="font-medium text-foreground">
+                  {formatCompactCurrency(line.collectedRevenue)}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>Cuentas por cobrar</dt>
+                <dd className="font-medium text-foreground">
+                  {formatCompactCurrency(line.accountsReceivable)}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>Gastos fijos</dt>
+                <dd className="font-medium text-foreground">
+                  {formatCompactCurrency(line.fixedExpenses)}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>Gastos variables</dt>
+                <dd className="font-medium text-foreground">
+                  {formatCompactCurrency(line.variableExpenses)}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>Costos fijos</dt>
+                <dd className="font-medium text-foreground">
+                  {formatCompactCurrency(line.fixedCosts)}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>Costos variables</dt>
+                <dd className="font-medium text-foreground">
+                  {formatCompactCurrency(line.variableCosts)}
+                </dd>
+              </div>
+            </dl>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MonthlyRevenueByLine({ lines }: { lines: BusinessLineDashboard[] }) {
+  return (
+    <section className="rounded-md border bg-card p-4">
+      <div className="mb-4 flex items-center gap-2 text-sm font-medium">
+        <TrendingUp className="size-4 text-primary" />
+        Ingresos por mes
+      </div>
+      <div className="grid gap-5 xl:grid-cols-3">
+        {lines.map((line) => (
+          <article className="grid gap-3" key={line.companyName}>
+            <div>
+              <h3 className="text-sm font-semibold">{line.shortName}</h3>
+              <p className="text-xs text-muted-foreground">{line.scopeName}</p>
+            </div>
+            <BarList data={line.monthlyRevenue} suffix="K" />
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function OperationalLineSelector({
+  lines,
+  selectedLineKey,
+  onSelectedLineKeyChange,
+}: {
+  lines: BusinessLineDashboard[];
+  selectedLineKey: BusinessLineKey | "";
+  onSelectedLineKeyChange: (lineKey: BusinessLineKey) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 rounded-md border bg-card p-4 md:flex-row md:items-center md:justify-between">
+      <div className="grid gap-1">
+        <h2 className="text-lg font-semibold tracking-normal">
+          Detalle operativo por linea de negocio
+        </h2>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Elige la linea para ver citas por estado, ocupacion efectiva y
+          rendimiento sin mezclar negocios.
+        </p>
+      </div>
+      <label className="grid min-w-64 gap-1 text-sm">
+        <span className="font-medium">Linea de negocio</span>
+        <select
+          className="h-9 rounded-md border bg-background px-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+          onChange={(event) =>
+            onSelectedLineKeyChange(event.target.value as BusinessLineKey)
+          }
+          value={selectedLineKey}
+        >
+          {lines.map((line) => (
+            <option key={line.key} value={line.key}>
+              {line.companyName}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
   );
 }
 
 export function ExecutiveDashboard() {
   const [context, setContext] = useState<StoredContext | null>(null);
+  const [selectedOperationalLineKey, setSelectedOperationalLineKey] =
+    useState<BusinessLineKey | "">("");
 
   useEffect(() => {
-    setContext(readStoredContext());
+    function refreshContext() {
+      setContext(readStoredContext());
+    }
+
+    refreshContext();
+    window.addEventListener("storage", refreshContext);
+    window.addEventListener(contextChangeEvent, refreshContext);
+
+    return () => {
+      window.removeEventListener("storage", refreshContext);
+      window.removeEventListener(contextChangeEvent, refreshContext);
+    };
   }, []);
+
+  const selectedPeriod =
+    context?.period ??
+    (context?.periodStart && context?.periodEnd
+      ? `${context.periodStart} a ${context.periodEnd}`
+      : demoDashboardMeta.selectedPeriod);
+
+  const lines = useMemo(
+    () =>
+      getBusinessLinesForDashboard({
+        branchId: context?.branchId,
+        companyName: context?.companyName,
+      }),
+    [context?.branchId, context?.companyName],
+  );
+
+  const revenueShare = useMemo(() => getRevenueShareData(lines), [lines]);
+  const targetVsActual = useMemo(() => getTargetVsActualByLine(lines), [lines]);
+  const selectedOperationalLine = useMemo(
+    () =>
+      lines.find((line) => line.key === selectedOperationalLineKey) ??
+      lines[0] ??
+      null,
+    [lines, selectedOperationalLineKey],
+  );
+  const operationalLines = useMemo(
+    () => (selectedOperationalLine ? [selectedOperationalLine] : []),
+    [selectedOperationalLine],
+  );
+  const appointmentStatus = useMemo(
+    () => getAppointmentStatusByLine(operationalLines),
+    [operationalLines],
+  );
+  const selectedOccupancy = useMemo(
+    () => getOccupancyByLine(operationalLines),
+    [operationalLines],
+  );
+  const managerPerformance = useMemo(
+    () => getManagerPerformanceByLine(operationalLines),
+    [operationalLines],
+  );
+
+  useEffect(() => {
+    if (lines.length === 0) {
+      setSelectedOperationalLineKey("");
+      return;
+    }
+
+    if (!lines.some((line) => line.key === selectedOperationalLineKey)) {
+      setSelectedOperationalLineKey(lines[0].key);
+    }
+  }, [lines, selectedOperationalLineKey]);
 
   return (
     <section className="flex w-full flex-col gap-6 px-4 py-6 lg:px-6">
@@ -156,86 +597,102 @@ export function ExecutiveDashboard() {
               Resumen ejecutivo
             </h1>
             <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-              Vista consolidada DEMO con indicadores financieros, operativos,
-              ocupacion, metas, calidad y fuentes utilizadas.
+              Vista ejecutiva DEMO para CEO, gerente de operaciones y gerentes
+              de sucursal. El primer bloque esta separado por linea de negocio;
+              no usa una suma general porque eso puede ocultar la realidad de
+              cada empresa.
             </p>
           </div>
           <div className="rounded-md border bg-card p-4 text-sm">
             <div className="mb-2 flex items-center gap-2 font-medium">
               <CheckCircle2 className="size-4 text-primary" />
-              Contexto activo
+              Vista ejecutiva activa
             </div>
             <div className="grid gap-1 text-muted-foreground">
               <span>
                 {context?.countryName ?? "Pais pendiente"} /{" "}
-                {context?.companyName ?? "Empresa pendiente"}
+                {context?.companyName ?? "Empresa pendiente"} /{" "}
+                {context?.businessLineName ?? "Linea pendiente"}
               </span>
               <span>{context?.branchName ?? "Sucursal pendiente"}</span>
-              <span>
-                Periodo: {context?.period ?? demoDashboardMeta.selectedPeriod}
-              </span>
+              <span>Periodo: {selectedPeriod}</span>
               <span>Ultima actualizacion: {demoDashboardMeta.lastUpdated}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        {executiveKpis.map((kpi) => (
-          <KpiCard key={kpi.label} kpi={kpi} />
-        ))}
-      </div>
+      <ExecutiveStatusTable lines={lines} />
+      <BusinessLineSummary lines={lines} />
+      <FinancialHealthByLine lines={lines} />
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        <section className="rounded-md border bg-card p-4">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium">
-            <TrendingUp className="size-4 text-primary" />
-            Ingresos por mes
-          </div>
-          <BarList data={revenueByMonth} suffix="K" />
-        </section>
-
-        <section className="rounded-md border bg-card p-4">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium">
-            <CircleDollarSign className="size-4 text-primary" />
-            Participacion por empresa
-          </div>
-          <BarList data={revenueByCompany} suffix="%" />
-        </section>
-
+      <div className="grid gap-4 xl:grid-cols-2">
         <section className="rounded-md border bg-card p-4">
           <div className="mb-4 flex items-center gap-2 text-sm font-medium">
             <BarChart3 className="size-4 text-primary" />
-            Citas por estado
+            Participacion por empresa
+          </div>
+          <BarList data={revenueShare} suffix="%" />
+        </section>
+
+        <section className="rounded-md border bg-card p-4">
+          <div className="mb-4 flex items-center gap-2 text-sm font-medium">
+            <Target className="size-4 text-primary" />
+            Metas vs resultados por empresa
+          </div>
+          <BarList data={targetVsActual} suffix="K" />
+        </section>
+      </div>
+
+      <MonthlyRevenueByLine lines={lines} />
+
+      <OperationalLineSelector
+        lines={lines}
+        onSelectedLineKeyChange={setSelectedOperationalLineKey}
+        selectedLineKey={selectedOperationalLine?.key ?? ""}
+      />
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <section className="rounded-md border bg-card p-4">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <LineChart className="size-4 text-primary" />
+              {getOperationalStatusTitle(selectedOperationalLine)}
+            </div>
+            {selectedOperationalLine ? (
+              <Badge variant="outline">{selectedOperationalLine.shortName}</Badge>
+            ) : null}
           </div>
           <BarList data={appointmentStatus} />
         </section>
 
         <section className="rounded-md border bg-card p-4">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium">
-            <Database className="size-4 text-primary" />
-            Ocupacion efectiva por unidad
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Database className="size-4 text-primary" />
+              Ocupacion efectiva
+            </div>
+            {selectedOperationalLine ? (
+              <Badge variant="outline">{selectedOperationalLine.shortName}</Badge>
+            ) : null}
           </div>
-          <BarList data={occupancyByUnit} suffix="%" />
+          <BarList data={selectedOccupancy} suffix="%" />
         </section>
 
         <section className="rounded-md border bg-card p-4">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium">
-            <CheckCircle2 className="size-4 text-primary" />
-            Metas vs resultados
-          </div>
-          <BarList data={targetVsActual} suffix="K" />
-        </section>
-
-        <section className="rounded-md border bg-card p-4">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium">
-            <AlertTriangle className="size-4 text-primary" />
-            Rendimiento ajustado por sucursal
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <AlertTriangle className="size-4 text-primary" />
+              Rendimiento de la linea seleccionada
+            </div>
+            {selectedOperationalLine ? (
+              <Badge variant="outline">{selectedOperationalLine.shortName}</Badge>
+            ) : null}
           </div>
           <BarList data={managerPerformance} suffix="%" />
           <p className="mt-3 text-xs leading-5 text-muted-foreground">
-            Comparativo DEMO ajustado por capacidad, tamano, mezcla de
-            servicios y calidad de datos.
+            Cambia con el selector superior de negocio, sucursal y fechas, y
+            con el selector de linea de negocio de este bloque.
           </p>
         </section>
       </div>

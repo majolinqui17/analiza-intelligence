@@ -1,12 +1,19 @@
 import { Suspense } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ContextSelectionForm } from "@/components/context-selection-form";
+import {
+  demoAdminCookieName,
+  demoAdminEmail,
+  hasDemoAdminCookie,
+} from "@/lib/auth/demo-admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   demoBranches,
-  demoCompanies,
-  demoCountries,
+  demoBusinessLineOptions,
+  demoCompanyOptions,
+  demoCountryOptions,
 } from "@/lib/tenant/demo-context";
 
 function getClaimString(claims: unknown, key: string) {
@@ -19,6 +26,23 @@ function getClaimString(claims: unknown, key: string) {
 }
 
 async function ContextSelectionGate() {
+  const cookieStore = await cookies();
+  const hasDemoAdminSession = hasDemoAdminCookie(
+    cookieStore.get(demoAdminCookieName)?.value,
+  );
+
+  if (hasDemoAdminSession) {
+    return (
+      <ContextSelectionForm
+        branches={demoBranches}
+        businessLines={demoBusinessLineOptions}
+        companies={demoCompanyOptions}
+        countries={demoCountryOptions}
+        userEmail={demoAdminEmail}
+      />
+    );
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
 
@@ -27,12 +51,13 @@ async function ContextSelectionGate() {
   }
 
   return (
-    <ContextSelectionForm
-      branches={demoBranches}
-      companies={demoCompanies}
-      countries={demoCountries}
-      userEmail={getClaimString(data.claims, "email") ?? "usuario autorizado"}
-    />
+      <ContextSelectionForm
+        branches={demoBranches}
+        businessLines={demoBusinessLineOptions}
+        companies={demoCompanyOptions}
+        countries={demoCountryOptions}
+        userEmail={getClaimString(data.claims, "email") ?? "usuario autorizado"}
+      />
   );
 }
 

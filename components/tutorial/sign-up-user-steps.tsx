@@ -76,8 +76,8 @@ export function SignUpUserSteps() {
       <TutorialStep title="Create assigned users">
         <p>
           Create users from Supabase Auth or the future administration screen,
-          then assign organization, country, company, branch, and role before
-          they can use Analiza Intelligence.
+          then assign one Analiza role: Webmaster / Administrador, CEO, Gerente
+          de operaciones, or Gerente de sucursal.
         </p>
       </TutorialStep>
     </ol>

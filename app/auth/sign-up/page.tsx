@@ -18,16 +18,23 @@ export default function Page() {
           <div className="mb-2 flex size-10 items-center justify-center rounded-md bg-muted">
             <ShieldAlert className="size-5 text-primary" />
           </div>
-          <CardTitle>Registro no disponible</CardTitle>
+          <CardTitle>Crear cuenta</CardTitle>
           <CardDescription>
-            Las cuentas se crean desde administracion con asignaciones de
-            pais, empresa, sucursal y rol.
+            Para usuarios reales, el webmaster/administrador crea el acceso y
+            asigna uno de cuatro roles: Webmaster / Administrador, CEO, Gerente
+            de operaciones o Gerente de sucursal. Para probar ahora, usa Admin
+            DEMO.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button asChild className="w-full">
-            <Link href="/auth/login">Volver al login</Link>
-          </Button>
+          <div className="grid gap-3">
+            <Button asChild className="w-full">
+              <Link href="/auth/demo-admin">Entrar como Admin DEMO</Link>
+            </Button>
+            <Button asChild className="w-full" variant="outline">
+              <Link href="/auth/login">Volver al login</Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,3 +1,8 @@
+import {
+  elSalvadorBranchResultTemplates,
+  elSalvadorTemplateSummary,
+} from "@/lib/analytics/el-salvador-result-templates";
+
 export type ExecutiveKpi = {
   label: string;
   value: string;
@@ -14,12 +19,420 @@ export type BarPoint = {
   value: number;
 };
 
+export type BusinessLineKey = "fisioterapia" | "laboratorio" | "imagenes";
+export type BusinessLineStatus = "verde" | "amarillo" | "rojo";
+
+export type BusinessLineDashboard = {
+  key: BusinessLineKey;
+  companyName: string;
+  shortName: string;
+  scopeName: string;
+  revenue: number;
+  revenueGrowthRate: number;
+  collectedRevenue: number;
+  accountsReceivable: number;
+  revenueTarget: number;
+  financialHealth: number;
+  operatingHealth: number;
+  fixedExpenses: number;
+  variableExpenses: number;
+  fixedCosts: number;
+  variableCosts: number;
+  marginRate: number;
+  marginDeltaPoints: number;
+  scheduledAppointments: number;
+  completedAppointments: number;
+  noShows: number;
+  cancelledAppointments: number;
+  rescheduledAppointments: number;
+  effectiveOccupancy: number;
+  scheduledOccupancy: number;
+  serviceVolume: number;
+  patientCount: number;
+  averageTicket: number;
+  executiveStatus: BusinessLineStatus;
+  executiveInterpretation: string;
+  sourceNote: string;
+  alert: string;
+  monthlyRevenue: BarPoint[];
+  occupancyByBranch: BarPoint[];
+};
+
 export type InsightPreview = {
   title: string;
   priority: "alta" | "media" | "baja";
   affectedIndicator: string;
   recommendation: string;
 };
+
+const laboratoryRevenue = elSalvadorTemplateSummary.totalActualRevenue;
+const laboratoryTarget = elSalvadorTemplateSummary.totalRevenueTarget;
+const laboratoryCostOfSale = elSalvadorTemplateSummary.totalCostOfSale;
+const laboratoryPatients = elSalvadorBranchResultTemplates.reduce(
+  (sum, branch) => sum + branch.rowCounts.customerRows,
+  0,
+);
+
+export const dashboardBusinessLines: BusinessLineDashboard[] = [
+  {
+    key: "fisioterapia",
+    companyName: "Analiza Fisioterapia",
+    shortName: "Fisioterapia",
+    scopeName: "Linea de negocio",
+    revenue: 94200,
+    revenueGrowthRate: 9,
+    collectedRevenue: 86800,
+    accountsReceivable: 7400,
+    revenueTarget: 100000,
+    financialHealth: 89,
+    operatingHealth: 91,
+    fixedExpenses: 24400,
+    variableExpenses: 18500,
+    fixedCosts: 12400,
+    variableCosts: 21100,
+    marginRate: 0.38,
+    marginDeltaPoints: 2,
+    scheduledAppointments: 1540,
+    completedAppointments: 1320,
+    noShows: 98,
+    cancelledAppointments: 74,
+    rescheduledAppointments: 48,
+    effectiveOccupancy: 61,
+    scheduledOccupancy: 80,
+    serviceVolume: 2840,
+    patientCount: 1180,
+    averageTicket: 80,
+    executiveStatus: "amarillo",
+    executiveInterpretation:
+      "Fisioterapia tiene demanda suficiente, pero solo aprovecha 61% de las horas disponibles.",
+    sourceNote: "DEMO fisioterapia",
+    alert: "Alta demanda con brecha de asistencia en horas pico.",
+    monthlyRevenue: [
+      { label: "Ene", value: 68 },
+      { label: "Feb", value: 72 },
+      { label: "Mar", value: 81 },
+      { label: "Abr", value: 79 },
+      { label: "May", value: 88 },
+      { label: "Jun", value: 94 },
+    ],
+    occupancyByBranch: [
+      { label: "Norte", value: 74 },
+      { label: "Centro", value: 69 },
+      { label: "Sur", value: 71 },
+    ],
+  },
+  {
+    key: "laboratorio",
+    companyName: "Analiza Laboratorio",
+    shortName: "Laboratorio",
+    scopeName: "El Salvador",
+    revenue: laboratoryRevenue,
+    revenueGrowthRate: 12,
+    collectedRevenue: Math.round(laboratoryRevenue * 0.91),
+    accountsReceivable: Math.round(laboratoryRevenue * 0.09),
+    revenueTarget: laboratoryTarget,
+    financialHealth: 78,
+    operatingHealth: 86,
+    fixedExpenses: 56200,
+    variableExpenses: 41800,
+    fixedCosts: 31200,
+    variableCosts: laboratoryCostOfSale,
+    marginRate: 0.86,
+    marginDeltaPoints: -5,
+    scheduledAppointments: 9034,
+    completedAppointments: 8128,
+    noShows: 358,
+    cancelledAppointments: 287,
+    rescheduledAppointments: 261,
+    effectiveOccupancy: 68,
+    scheduledOccupancy: 75,
+    serviceVolume: 88228,
+    patientCount: laboratoryPatients,
+    averageTicket: Math.round(laboratoryRevenue / Math.max(laboratoryPatients, 1)),
+    executiveStatus: "rojo",
+    executiveInterpretation:
+      "Laboratorio crece 12%, pero el margen cayo 5 puntos por aumento en reactivos y pruebas de bajo rendimiento.",
+    sourceNote: "Plantillas reales SV DEMO",
+    alert: "Revisar duplicados, periodos y formulas antes de aprobar carga.",
+    monthlyRevenue: [
+      { label: "Ene", value: 164 },
+      { label: "Feb", value: 158 },
+      { label: "Mar", value: 184 },
+      { label: "Abr", value: 173 },
+      { label: "May", value: 182 },
+      { label: "Jun", value: Math.round(laboratoryRevenue / 1000) },
+    ],
+    occupancyByBranch: [
+      { label: "Aguilares", value: 86 },
+      { label: "Chalatenango", value: 82 },
+      { label: "Constitucion", value: 73 },
+      { label: "La Libertad", value: 88 },
+      { label: "Merliot 2", value: 79 },
+      { label: "Plaza Sur", value: 78 },
+      { label: "Santa Tecla", value: 76 },
+    ],
+  },
+  {
+    key: "imagenes",
+    companyName: "Analiza Imagenes",
+    shortName: "Imagenes",
+    scopeName: "Linea de negocio",
+    revenue: 67500,
+    revenueGrowthRate: 6,
+    collectedRevenue: 60400,
+    accountsReceivable: 7100,
+    revenueTarget: 82000,
+    financialHealth: 74,
+    operatingHealth: 80,
+    fixedExpenses: 37400,
+    variableExpenses: 14900,
+    fixedCosts: 28600,
+    variableCosts: 9800,
+    marginRate: 0.27,
+    marginDeltaPoints: 1,
+    scheduledAppointments: 668,
+    completedAppointments: 521,
+    noShows: 66,
+    cancelledAppointments: 47,
+    rescheduledAppointments: 34,
+    effectiveOccupancy: 63,
+    scheduledOccupancy: 70,
+    serviceVolume: 1940,
+    patientCount: 620,
+    averageTicket: 109,
+    executiveStatus: "verde",
+    executiveInterpretation:
+      "Imagenes mantiene margen positivo y ocupacion estable, con oportunidad de llenar horarios vespertinos.",
+    sourceNote: "DEMO imagenes",
+    alert: "Capacidad ociosa y costos fijos de equipo pendientes.",
+    monthlyRevenue: [
+      { label: "Ene", value: 49 },
+      { label: "Feb", value: 52 },
+      { label: "Mar", value: 58 },
+      { label: "Abr", value: 55 },
+      { label: "May", value: 63 },
+      { label: "Jun", value: 68 },
+    ],
+    occupancyByBranch: [
+      { label: "Este", value: 63 },
+      { label: "Centro", value: 67 },
+      { label: "Sur", value: 58 },
+    ],
+  },
+];
+
+function buildLaboratoryBranchLine(
+  branchId: string,
+): BusinessLineDashboard | null {
+  const branch = elSalvadorBranchResultTemplates.find(
+    (item) => item.id === branchId,
+  );
+
+  if (!branch) {
+    return null;
+  }
+
+  const revenueK = Math.round(branch.actualRevenue / 1000);
+
+  return {
+    key: "laboratorio",
+    companyName: "Analiza Laboratorio",
+    shortName: branch.city,
+    scopeName: branch.branchName,
+    revenue: branch.actualRevenue,
+    revenueGrowthRate: Math.round((branch.revenueCompletionRate - 1) * 100),
+    collectedRevenue: Math.round(branch.actualRevenue * 0.91),
+    accountsReceivable: Math.round(branch.actualRevenue * 0.09),
+    revenueTarget: branch.revenueTarget,
+    financialHealth: branch.dataQualityScore,
+    operatingHealth: Math.round(branch.revenueCompletionRate * 80),
+    fixedExpenses: Math.round(branch.actualRevenue * 0.18),
+    variableExpenses: branch.costOfSale,
+    fixedCosts: Math.round(branch.actualRevenue * 0.11),
+    variableCosts: branch.costOfSale,
+    marginRate: branch.marginRate,
+    marginDeltaPoints: branch.marginRate >= 0.35 ? 1 : -4,
+    scheduledAppointments: branch.rowCounts.salesRows,
+    completedAppointments: Math.round(branch.rowCounts.salesRows * 0.9),
+    noShows: Math.round(branch.rowCounts.salesRows * 0.04),
+    cancelledAppointments: Math.round(branch.rowCounts.salesRows * 0.03),
+    rescheduledAppointments: Math.round(branch.rowCounts.salesRows * 0.03),
+    effectiveOccupancy: branch.dataQualityScore,
+    scheduledOccupancy: Math.min(branch.dataQualityScore + 7, 100),
+    serviceVolume: branch.rowCounts.customerRows,
+    patientCount: branch.rowCounts.customerRows,
+    averageTicket: Math.round(branch.actualRevenue / Math.max(branch.rowCounts.customerRows, 1)),
+    executiveStatus:
+      branch.dataQualityScore >= 85
+        ? "verde"
+        : branch.dataQualityScore >= 75
+          ? "amarillo"
+          : "rojo",
+    executiveInterpretation:
+      branch.validationFlags[0] ??
+      "Sucursal con plantilla cargada; revisar meta, margen y calidad antes de presentar al CEO.",
+    sourceNote: branch.fileName,
+    alert: branch.validationFlags[0] ?? "Plantilla de resultados cargada.",
+    monthlyRevenue: [
+      { label: "Ene", value: Math.round(revenueK * 0.72) },
+      { label: "Feb", value: Math.round(revenueK * 0.78) },
+      { label: "Mar", value: Math.round(revenueK * 0.88) },
+      { label: "Abr", value: Math.round(revenueK * 0.84) },
+      { label: "May", value: Math.round(revenueK * 0.92) },
+      { label: "Jun", value: revenueK },
+    ],
+    occupancyByBranch: [{ label: branch.city, value: branch.dataQualityScore }],
+  };
+}
+
+export function getBusinessLinesForDashboard({
+  branchId,
+  companyName,
+}: {
+  branchId?: string;
+  companyName?: string;
+}) {
+  if (branchId) {
+    const branchLine = buildLaboratoryBranchLine(branchId);
+
+    if (branchLine) {
+      return [branchLine];
+    }
+  }
+
+  if (!companyName || companyName === "Vista consolidada") {
+    return dashboardBusinessLines;
+  }
+
+  const normalizedCompanyName = companyName.toLowerCase();
+
+  return dashboardBusinessLines.filter((line) =>
+    normalizedCompanyName.includes(line.shortName.toLowerCase()),
+  );
+}
+
+export function getRevenueShareData(lines: BusinessLineDashboard[]): BarPoint[] {
+  const totalRevenue = lines.reduce((sum, line) => sum + line.revenue, 0);
+
+  return lines.map((line) => ({
+    label: line.shortName,
+    value:
+      totalRevenue > 0 ? Math.round((line.revenue / totalRevenue) * 100) : 0,
+  }));
+}
+
+export function getTargetVsActualByLine(
+  lines: BusinessLineDashboard[],
+): BarPoint[] {
+  return lines.flatMap((line) => [
+    { label: `${line.shortName} meta`, value: Math.round(line.revenueTarget / 1000) },
+    { label: `${line.shortName} real`, value: Math.round(line.revenue / 1000) },
+  ]);
+}
+
+export function getAppointmentStatusByLine(
+  lines: BusinessLineDashboard[],
+): BarPoint[] {
+  return lines.flatMap((line) => {
+    if (line.key === "laboratorio") {
+      return [
+        {
+          label: lines.length === 1 ? "Ordenes creadas" : "Laboratorio ordenes",
+          value: line.scheduledAppointments,
+        },
+        {
+          label:
+            lines.length === 1
+              ? "Pacientes recibidos"
+              : "Laboratorio pacientes",
+          value: line.completedAppointments,
+        },
+        {
+          label: lines.length === 1 ? "Muestras tomadas" : "Laboratorio muestras",
+          value: Math.round(line.completedAppointments * 0.98),
+        },
+        {
+          label:
+            lines.length === 1
+              ? "Resultados pendientes"
+              : "Laboratorio resultados pendientes",
+          value: Math.round(line.scheduledAppointments * 0.04),
+        },
+      ];
+    }
+
+    if (line.key === "imagenes") {
+      return [
+        {
+          label:
+            lines.length === 1
+              ? "Estudios agendados"
+              : "Imagenes estudios agendados",
+          value: line.scheduledAppointments,
+        },
+        {
+          label:
+            lines.length === 1 ? "Estudios realizados" : "Imagenes realizados",
+          value: line.completedAppointments,
+        },
+        {
+          label:
+            lines.length === 1 ? "Informes pendientes" : "Imagenes pendientes",
+          value: Math.round(line.completedAppointments * 0.07),
+        },
+        {
+          label: lines.length === 1 ? "Canceladas" : "Imagenes canceladas",
+          value: line.cancelledAppointments,
+        },
+      ];
+    }
+
+    return [
+      {
+        label:
+          lines.length === 1 ? "Citas completadas" : `${line.shortName} citas`,
+        value: line.completedAppointments,
+      },
+      {
+        label: lines.length === 1 ? "No-show" : `${line.shortName} no-show`,
+        value: line.noShows,
+      },
+      {
+        label: lines.length === 1 ? "Canceladas" : `${line.shortName} canceladas`,
+        value: line.cancelledAppointments,
+      },
+      {
+        label:
+          lines.length === 1
+            ? "Reprogramadas"
+            : `${line.shortName} reprogramadas`,
+        value: line.rescheduledAppointments,
+      },
+    ];
+  });
+}
+
+export function getOccupancyByLine(lines: BusinessLineDashboard[]): BarPoint[] {
+  return lines.flatMap((line) =>
+    line.occupancyByBranch.map((point) => ({
+      label: lines.length === 1 ? point.label : `${line.shortName} ${point.label}`,
+      value: point.value,
+    })),
+  );
+}
+
+export function getManagerPerformanceByLine(
+  lines: BusinessLineDashboard[],
+): BarPoint[] {
+  return lines.map((line) => ({
+    label: line.shortName,
+    value: Math.round(
+      line.financialHealth * 0.35 +
+        line.operatingHealth * 0.35 +
+        Math.min((line.revenue / line.revenueTarget) * 100, 120) * 0.3,
+    ),
+  }));
+}
 
 export const demoDashboardMeta = {
   environment: "DEMO",
@@ -278,4 +691,3 @@ export const insightPreviews: InsightPreview[] = [
     recommendation: "Completar horarios antes de presentar conclusiones ejecutivas.",
   },
 ];
-

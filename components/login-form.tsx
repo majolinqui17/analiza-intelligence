@@ -92,8 +92,21 @@ export function LoginForm({
                 {isLoading ? "Ingresando..." : "Ingresar"}
               </Button>
             </div>
-            <div className="mt-4 text-center text-xs text-muted-foreground">
-              El registro publico no esta habilitado.
+            <div className="mt-4 text-center text-sm">
+              ¿Necesitas acceso?{" "}
+              <Link
+                href="/auth/sign-up"
+                className="underline underline-offset-4"
+              >
+                Crear cuenta
+              </Link>
+            </div>
+            <div className="mt-4">
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/auth/demo-admin">
+                  Entrar al panel ejecutivo DEMO
+                </Link>
+              </Button>
             </div>
           </form>
         </CardContent>

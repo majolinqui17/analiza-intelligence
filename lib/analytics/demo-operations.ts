@@ -1,4 +1,8 @@
 import {
+  elSalvadorBranchResultTemplates,
+  formatRate,
+} from "@/lib/analytics/el-salvador-result-templates";
+import {
   calculateAppointmentRates,
   calculateOccupancy,
   formatPercent,
@@ -98,71 +102,39 @@ export const capacityRows: CapacityRow[] = [
   },
 ];
 
-export const branchPerformanceRows: BranchPerformanceRow[] = [
-  {
-    branch: "Sucursal DEMO Fisioterapia Norte",
-    country: "Honduras",
-    company: "Analiza Fisioterapia",
-    manager: "Gerente DEMO Norte",
-    capacitySize: "160 h disponibles",
-    dataQuality: 88,
-    revenueTarget: 94,
-    operatingTarget: 91,
-  },
-  {
-    branch: "Sucursal DEMO Laboratorio Central",
-    country: "Honduras",
+export const branchPerformanceRows: BranchPerformanceRow[] =
+  elSalvadorBranchResultTemplates.map((row) => ({
+    branch: row.branchName,
+    country: "El Salvador",
     company: "Analiza Laboratorio",
-    manager: "Gerente DEMO Central",
-    capacitySize: "140 h disponibles",
-    dataQuality: 84,
-    revenueTarget: 89,
-    operatingTarget: 86,
-  },
-  {
-    branch: "Sucursal DEMO Imagenes Este",
-    country: "Honduras",
-    company: "Analiza Imagenes",
-    manager: "Gerente DEMO Este",
-    capacitySize: "120 h disponibles",
-    dataQuality: 79,
-    revenueTarget: 83,
-    operatingTarget: 80,
-  },
-];
+    manager: row.manager,
+    capacitySize: `${row.rowCounts.salesRows.toLocaleString("en-US")} ventas cargadas`,
+    dataQuality: row.dataQualityScore,
+    revenueTarget: Math.round(row.revenueCompletionRate * 100),
+    operatingTarget: Math.round(row.marginRate * 100),
+  }));
 
-export const managerPerformanceRows: ManagerPerformanceRow[] = [
-  {
-    manager: "Gerente DEMO Norte",
-    country: "Honduras",
-    company: "Analiza Fisioterapia",
-    branch: "Sucursal DEMO Fisioterapia Norte",
-    capacityAdjustedIndex: 86,
-    strengths: ["Meta de ingresos", "Ocupacion efectiva"],
-    alerts: ["Brecha de asistencia"],
-    dataQuality: 88,
-  },
-  {
-    manager: "Gerente DEMO Central",
-    country: "Honduras",
+export const managerPerformanceRows: ManagerPerformanceRow[] =
+  elSalvadorBranchResultTemplates.map((row) => ({
+    manager: row.manager,
+    country: "El Salvador",
     company: "Analiza Laboratorio",
-    branch: "Sucursal DEMO Laboratorio Central",
-    capacityAdjustedIndex: 82,
-    strengths: ["Finalizacion", "Calidad de datos"],
-    alerts: ["Tiempo de entrega pendiente"],
-    dataQuality: 84,
-  },
-  {
-    manager: "Gerente DEMO Este",
-    country: "Honduras",
-    company: "Analiza Imagenes",
-    branch: "Sucursal DEMO Imagenes Este",
-    capacityAdjustedIndex: null,
-    strengths: ["Demanda estable"],
-    alerts: ["Completitud insuficiente para puntuacion"],
-    dataQuality: 62,
-  },
-];
+    branch: row.branchName,
+    capacityAdjustedIndex:
+      row.dataQualityScore < 78
+        ? null
+        : Math.round(
+            row.revenueCompletionRate * 50 +
+              row.marginRate * 30 +
+              (row.dataQualityScore / 100) * 20,
+          ),
+    strengths: [
+      row.revenueCompletionRate >= 1 ? "Meta de venta" : "Seguimiento de meta",
+      `Margen ${formatRate(row.marginRate)}`,
+    ],
+    alerts: row.validationFlags.slice(0, 2),
+    dataQuality: row.dataQualityScore,
+  }));
 
 export const appointmentRateSummary = calculateAppointmentRates({
   scheduledApplicable: 5830,
@@ -185,4 +157,3 @@ export function getCapacityViewRows() {
     };
   });
 }
-

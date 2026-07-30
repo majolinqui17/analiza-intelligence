@@ -11,6 +11,9 @@ export function EnvVarWarning() {
         <Button size="sm" variant={"outline"} disabled>
           Ingresar
         </Button>
+        <Button size="sm" variant={"default"} disabled>
+          Crear cuenta
+        </Button>
       </div>
     </div>
   );

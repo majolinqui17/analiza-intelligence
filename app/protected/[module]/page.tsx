@@ -1,15 +1,25 @@
 import { notFound } from "next/navigation";
 
+import { BranchNetworkDashboard } from "@/components/branch-network-dashboard";
+import { BusinessModuleDashboard } from "@/components/business-module-dashboard";
+import { CapacityOccupancyDashboard } from "@/components/capacity-occupancy-dashboard";
 import { CrmConnectorsDashboard } from "@/components/crm-connectors-dashboard";
 import { DataQualityAnaliaDashboard } from "@/components/data-quality-analia-dashboard";
-import {
-  OperationsModule,
-  operationsModuleSlugs,
-} from "@/components/operations-modules";
-import { ImportOperationsDashboard } from "@/components/import-operations-dashboard";
+import { ExecutiveOperationDashboard } from "@/components/executive-operation-dashboard";
+import { FinancialHealthDashboard } from "@/components/financial-health-dashboard";
 import { GoalsAdvancesDashboard } from "@/components/goals-advances-dashboard";
+import { ImagingPresentationDashboard } from "@/components/imaging-presentation-dashboard";
+import { InsightsIntelligenceDashboard } from "@/components/insights-intelligence-dashboard";
+import { ImportOperationsDashboard } from "@/components/import-operations-dashboard";
+import { LaboratoryPresentationDashboard } from "@/components/laboratory-presentation-dashboard";
 import { ManualMonthlyEntryDashboard } from "@/components/manual-monthly-entry-dashboard";
+import { OperationsModule } from "@/components/operations-modules";
+import { PatientFlowDemandDashboard } from "@/components/patient-flow-demand-dashboard";
+import { PhysiotherapyPresentationDashboard } from "@/components/physiotherapy-presentation-dashboard";
+import { ProfessionalPerformanceDashboard } from "@/components/professional-performance-dashboard";
+import { ServicePortfolioDashboard } from "@/components/service-portfolio-dashboard";
 import { Badge } from "@/components/ui/badge";
+import { moduleConfigs } from "@/lib/analytics/demo-business-modules";
 import { navigationItems } from "@/lib/navigation";
 
 type ModulePageProps = {
@@ -17,6 +27,10 @@ type ModulePageProps = {
     module: string;
   }>;
 };
+
+const operationsModuleSlugs = [
+  "gerentes",
+] as const;
 
 export function generateStaticParams() {
   return navigationItems
@@ -37,6 +51,42 @@ export default async function ModulePage({ params }: ModulePageProps) {
   }
 
   const Icon = item.icon;
+
+  if (module === "citas") {
+    return <PatientFlowDemandDashboard />;
+  }
+
+  if (module === "capacidad") {
+    return <CapacityOccupancyDashboard />;
+  }
+
+  if (module === "sucursales") {
+    return <BranchNetworkDashboard />;
+  }
+
+  if (module === "profesionales") {
+    return <ProfessionalPerformanceDashboard />;
+  }
+
+  if (module === "servicios") {
+    return <ServicePortfolioDashboard />;
+  }
+
+  if (module === "laboratorio") {
+    return <LaboratoryPresentationDashboard />;
+  }
+
+  if (module === "fisioterapia") {
+    return <PhysiotherapyPresentationDashboard />;
+  }
+
+  if (module === "imagenes") {
+    return <ImagingPresentationDashboard />;
+  }
+
+  if (module === "insights") {
+    return <InsightsIntelligenceDashboard />;
+  }
 
   if (module === "importaciones") {
     return <ImportOperationsDashboard />;
@@ -68,6 +118,18 @@ export default async function ModulePage({ params }: ModulePageProps) {
     )
   ) {
     return <OperationsModule module={module} />;
+  }
+
+  if (module === "operacion") {
+    return <ExecutiveOperationDashboard />;
+  }
+
+  if (module === "finanzas") {
+    return <FinancialHealthDashboard />;
+  }
+
+  if (moduleConfigs[module]) {
+    return <BusinessModuleDashboard module={module} />;
   }
 
   return (
