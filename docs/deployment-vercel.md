@@ -21,9 +21,17 @@ Configurar estas variables en Vercel Project Settings > Environment Variables:
 - `OPENAI_API_KEY`
 - `ANALIA_OPENAI_MODEL`
 - `ANALIZA_DISABLE_DEMO_ADMIN`
+- `ANALIZA_ENABLE_DEMO_ADMIN`
 
-Para pruebas internas, `ANALIZA_DISABLE_DEMO_ADMIN` puede estar en `false`.
-Para produccion real debe estar en `true`.
+Para pruebas internas sin datos reales, usar:
+
+- `ANALIZA_ENABLE_DEMO_ADMIN=true`
+- `ANALIZA_DISABLE_DEMO_ADMIN=false`
+
+Para produccion real con datos reales:
+
+- `ANALIZA_ENABLE_DEMO_ADMIN=false`
+- `ANALIZA_DISABLE_DEMO_ADMIN=true`
 
 ## Configuracion de build
 
