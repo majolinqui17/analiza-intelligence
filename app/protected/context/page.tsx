@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { ContextSelectionForm } from "@/components/context-selection-form";
 import {
   demoAdminCookieName,
-  demoAdminEmail,
+  getDemoAdminEmail,
   hasDemoAdminCookie,
 } from "@/lib/auth/demo-admin";
 import { createClient } from "@/lib/supabase/server";
@@ -39,7 +39,7 @@ async function ContextSelectionGate() {
         businessLines={demoBusinessLineOptions}
         companies={demoCompanyOptions}
         countries={demoCountryOptions}
-        userEmail={demoAdminEmail}
+        userEmail={getDemoAdminEmail()}
       />
     );
   }

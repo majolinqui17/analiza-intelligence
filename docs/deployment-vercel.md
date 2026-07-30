@@ -22,11 +22,17 @@ Configurar estas variables en Vercel Project Settings > Environment Variables:
 - `ANALIA_OPENAI_MODEL`
 - `ANALIZA_DISABLE_DEMO_ADMIN`
 - `ANALIZA_ENABLE_DEMO_ADMIN`
+- `ANALIZA_DEMO_ADMIN_EMAIL`
+- `ANALIZA_DEMO_ADMIN_PASSWORD`
+- `ANALIZA_DEMO_ADMIN_SESSION_TOKEN`
 
 Para pruebas internas sin datos reales, usar:
 
 - `ANALIZA_ENABLE_DEMO_ADMIN=true`
 - `ANALIZA_DISABLE_DEMO_ADMIN=false`
+- `ANALIZA_DEMO_ADMIN_EMAIL=admin.demo@analiza.local`
+- `ANALIZA_DEMO_ADMIN_PASSWORD`: una contrasena privada para la demo
+- `ANALIZA_DEMO_ADMIN_SESSION_TOKEN`: una cadena privada larga para firmar la sesion demo
 
 Para produccion real con datos reales:
 

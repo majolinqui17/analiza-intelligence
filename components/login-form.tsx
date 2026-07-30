@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { hasEnvVars } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,11 +29,32 @@ export function LoginForm({
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
     try {
+      const demoResponse = await fetch("/auth/demo-admin", {
+        body: JSON.stringify({ email, password }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+
+      if (demoResponse.ok) {
+        router.push("/protected/context");
+        router.refresh();
+        return;
+      }
+
+      if (!hasEnvVars) {
+        const demoPayload = (await demoResponse.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(
+          demoPayload?.error ?? "Usuario o contrasena incorrectos.",
+        );
+      }
+
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -101,12 +123,9 @@ export function LoginForm({
                 Crear cuenta
               </Link>
             </div>
-            <div className="mt-4">
-              <Button asChild className="w-full" variant="outline">
-                <Link href="/auth/demo-admin">
-                  Entrar al panel ejecutivo DEMO
-                </Link>
-              </Button>
+            <div className="mt-4 rounded-md border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
+              Admin DEMO tambien requiere usuario y contrasena asignados. No se
+              puede entrar al panel solo con el link.
             </div>
           </form>
         </CardContent>

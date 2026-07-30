@@ -50,7 +50,7 @@ export default function Home() {
                 <Link href="/auth/sign-up">Crear cuenta</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/auth/demo-admin">Admin DEMO</Link>
+                <Link href="/auth/login">Admin DEMO</Link>
               </Button>
               <Button asChild variant="outline">
                 <Link href="/protected/context">Ver dashboard ejecutivo</Link>

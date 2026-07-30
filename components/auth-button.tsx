@@ -5,9 +5,10 @@ import { LogoutButton } from "./logout-button";
 import { cookies } from "next/headers";
 import {
   demoAdminCookieName,
-  demoAdminEmail,
+  getDemoAdminEmail,
   hasDemoAdminCookie,
 } from "@/lib/auth/demo-admin";
+import { hasEnvVars } from "@/lib/utils";
 
 export async function AuthButton() {
   const cookieStore = await cookies();
@@ -19,9 +20,19 @@ export async function AuthButton() {
     return (
       <div className="flex items-center gap-4">
         <span className="text-sm text-muted-foreground">
-          {demoAdminEmail}
+          {getDemoAdminEmail()}
         </span>
         <LogoutButton />
+      </div>
+    );
+  }
+
+  if (!hasEnvVars) {
+    return (
+      <div className="flex gap-2">
+        <Button asChild size="sm" variant={"outline"}>
+          <Link href="/auth/login">Ingresar</Link>
+        </Button>
       </div>
     );
   }
@@ -47,9 +58,6 @@ export async function AuthButton() {
       </Button>
       <Button asChild size="sm" variant={"default"}>
         <Link href="/auth/sign-up">Crear cuenta</Link>
-      </Button>
-      <Button asChild size="sm" variant={"default"}>
-        <Link href="/auth/demo-admin">Admin DEMO</Link>
       </Button>
     </div>
   );

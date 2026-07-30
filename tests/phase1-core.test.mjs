@@ -121,8 +121,12 @@ if (!loginForm.includes("Crear cuenta")) {
   throw new Error("Login form should link to controlled account creation.");
 }
 
-if (!loginForm.includes("Entrar al panel ejecutivo DEMO")) {
+if (!loginForm.includes("Admin DEMO tambien requiere usuario y contrasena")) {
   throw new Error("Login form should expose controlled DEMO admin access.");
+}
+
+if (!demoAdminRoute.includes("getDemoAdminPassword")) {
+  throw new Error("DEMO admin route should require configured credentials.");
 }
 
 if (!demoAdminRoute.includes("demoAdminCookieName")) {
