@@ -12,6 +12,43 @@ En el entorno actual funciona como `DEMO`. No mezcla datos demo con datos reales
 - Descriptivo: explica variaciones con puentes de volumen, ticket, canal, margen, capacidad o mezcla.
 - Predictivo: anticipa riesgo, brecha o tendencia usando historicos validados y umbrales del registro de KPIs.
 
+## Cockpit predictivo por linea
+
+La pestana Insights ahora incluye un cockpit visual de AnaliA Data Science ligado a la linea de negocio activa. El cockpit se alimenta de la nueva carga mensual manual y presenta primero los KPIs que hacen funcionar el sistema:
+
+- Venta total contra meta.
+- Cumplimiento de meta.
+- Margen calculado desde venta y costo.
+- Volumen operativo: ordenes, sesiones o estudios segun la linea.
+- Mix de demanda o venta por origen.
+- Costo de venta, inventario o costo operativo.
+- Calidad y riesgo de datos por sucursal.
+
+En Laboratorio, el cockpit usa explicitamente los campos nuevos del formulario: `lab_financial_target`, `lab_total_sales`, `lab_cost_of_sale`, `lab_total_orders`, `lab_total_clients`, gastos, inventario y `medical_exam_sales_file`. El Excel comercial esperado contiene fecha, sucursal, doctor, examen, especialidad, area, total vendido y visitador.
+
+## Motor de seleccion de graficas
+
+AnaliA no muestra la misma grafica para todos los KPIs. La funcion `selectChartForKpi` decide la visualizacion mas apropiada:
+
+- Linea anual para venta, margen y volumen porque necesitan tendencia y comparacion 2026 versus 2025.
+- Barras para cumplimiento contra meta porque la decision depende de un umbral.
+- Dona para mix porque muestra participacion por origen.
+- Cascada para costo porque explica venta, costo de venta, gastos y contribucion.
+- Dispersion para calidad porque compara sucursales por riesgo, margen y tamano.
+
+Cada punto, barra o segmento conserva tooltip con dato exacto para que la lectura sea rapida sin perder detalle.
+
+## Comparacion y prediccion
+
+El cockpit compara:
+
+- KPI actual contra mismo periodo del ano anterior.
+- Resultado contra meta.
+- Venta contra costo de venta.
+- Calidad de datos contra riesgo.
+
+Las predicciones son conservadoras y visibles como `DEMO`. AnaliA calcula una tendencia de proximo mes con el historico mensual disponible y advierte cuando margen, costo o calidad de datos no permiten una conclusion fuerte. No debe aprobar metas, bonos ni acciones automaticamente.
+
 ## Alertas tempranas
 
 Cada alerta conserva:

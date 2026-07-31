@@ -31,6 +31,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DataScienceAgentCockpit } from "@/components/data-science-agent-cockpit";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/analytics/el-salvador-result-templates";
 import {
@@ -3082,6 +3083,8 @@ export function InsightsIntelligenceDashboard() {
         insights={insights}
         onChange={setFilters}
       />
+
+      <DataScienceAgentCockpit />
 
       <AnaliaAgentStatusPanel
         lastScanLabel={agentLastScan}
