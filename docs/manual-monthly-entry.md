@@ -11,6 +11,13 @@ La via manual principal para actualizar Analiza Intelligence sera un formulario 
 - El gerente de sucursal y el gerente de area se eligen desde listas derivadas del catalogo; no se capturan como texto libre.
 - El catalogo de sucursales incluye gerente de sucursal, gerente de area, pais, zona y linea de negocio desde `ddddd2.xlsx`.
 - El cierre captura contexto, resultados comerciales, operacion, citas, capacidad, costos, margen y calidad.
+- En Laboratorio, la seccion de capacidad/equipo se reemplaza por KPIs de clientes y perfiles de la plantilla de resultados: clientes unicos, nuevos, recurrentes, reactivados, ordenes por cliente, perfiles procesados y perfiles principales.
+- Laboratorio tambien captura perfiles operativos de la sucursal, como flebotomistas, tecnicos de laboratorio y recepcion, para que productividad y bonos no dependan de texto fijo del dashboard.
+- El cierre de Laboratorio incluye cantidad y monto de consumibles, insumos y reactivos. AnaliA compara esos montos contra ingreso, pruebas, costos e historico antes de tratarlos como confiables.
+- La calidad ya no se captura como un score manual. AnaliA calcula el score con completitud, coherencia, archivos cargados, montos sospechosos, sucursal, periodo, duplicados y trazabilidad.
+- Los Excel comerciales de doctores/montos vendidos y visitadores medicos se cargan como fuentes de apoyo para ventas mensuales por referidor y cartera medica.
+- La evaluacion 360 se realizara por correo o formulario anonimo; sus resultados llenan automaticamente score, tema cualitativo y accion sugerida.
+- La pantalla muestra un bloque Year to date para revisar acumulado 2026 por linea y sucursal seleccionada.
 - Cada registro conserva historial por linea, sucursal, periodo, fuente, estado y marca `DEMO`.
 - La vista consolidada solo muestra historial; no permite publicar cierres porque no se deben mezclar negocios distintos.
 - AnaliA puede usar estos cierres para Insights, alertas tempranas, metas sugeridas y lectura de salud financiera.
@@ -23,6 +30,8 @@ El formulario debe leerse como un asistente de cierre mensual, no como un tabler
 - Pasos visibles con pendientes por seccion.
 - Campos grandes, con selectores cuando el dato viene de catalogo.
 - Resumen lateral antes de publicar.
+- Alertas automaticas de AnaliA con motivo visible cuando un monto no cuadra.
+- Dashboard Year to date para comparar el acumulado contra meta sin abrir otra pantalla.
 - Reglas y metricas como apoyo, no como contenido principal.
 
 ## Roles y jerarquia
@@ -38,6 +47,8 @@ El formulario debe leerse como un asistente de cierre mensual, no como un tabler
 
 El acceso siempre debe evaluar organizacion, pais, empresa, area operativa, sucursal y rol. Un rol valido sin alcance valido no debe permitir ver ni editar datos.
 
+Cuando el usuario tiene rol `gerente_sucursal`, la sucursal reportada, gerente de sucursal y gerente de area deben venir de la cuenta loggeada y su alcance asignado. En DEMO se simula con el rol y el selector superior; en produccion debe resolverse desde las asignaciones de usuario y bloquear cualquier cambio fuera de su `branch_id`.
+
 ## Historial
 
 En el prototipo, los cierres guardados por el formulario viven en `localStorage` bajo `analiza:manual-monthly-history` para demostrar la experiencia de uso. En produccion, este historial debe persistir en base de datos con:
@@ -47,6 +58,7 @@ En el prototipo, los cierres guardados por el formulario viven en `localStorage`
 - Version activa, version anterior, motivo de reemplazo y auditoria.
 - Fuente de datos: formulario, conector, carga Excel o correccion aprobada.
 - Score de calidad y lista de reglas bloqueantes o advertencias.
+- Archivos comerciales asociados: doctores y montos vendidos, visitadores medicos, evaluaciones 360 anonimas y cualquier conector equivalente.
 - Deadline del dia 5 del mes siguiente, estado de puntualidad y efecto en score/bono.
 
 ## Calidad y privacidad
@@ -56,7 +68,8 @@ En el prototipo, los cierres guardados por el formulario viven en `localStorage`
 - Un cierre publicado solo puede reemplazarse con autorizacion de administrador.
 - La carga tardia queda marcada como penalizacion DEMO para score, disciplina y bono sugerido.
 - La evaluacion 360 debe guardarse como senal anonima y cualitativa; no debe exponer colaboradores ni usarse para represalias.
-- Si el score de calidad baja de 70%, el cierre debe quedar bloqueado o marcado con advertencia.
+- Si el score de calidad automatico baja de 70%, el cierre debe quedar bloqueado o marcado con advertencia.
+- Si un monto parece sospechoso, AnaliA debe mostrar la razon concreta, por ejemplo reactivos demasiado altos frente a venta neta, clientes duplicados, pruebas por orden fuera de rango, archivo de doctores faltante o periodo inconsistente.
 - Los dashboards ejecutivos no deben presentar conclusiones fuertes cuando la calidad sea insuficiente.
 
 ## Conectores

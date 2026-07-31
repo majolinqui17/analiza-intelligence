@@ -755,7 +755,9 @@ function UsersAndPermissionsManager({
     setBusinessScope(allBusinessScope);
     setAreaScope(allAreaScope);
     setBranchScope(allBranchScope);
-    setMessage("Invitacion DEMO creada. La cuenta queda pendiente hasta aceptar.");
+    setMessage(
+      "Invitacion DEMO creada. No se envio correo real porque falta activar el proveedor de correo/Auth; la cuenta queda pendiente hasta aceptar.",
+    );
   }
 
   function updateUserRole(userId: string, nextRole: RoleKey) {
@@ -896,6 +898,13 @@ function UsersAndPermissionsManager({
             Sucursales {canCreateBranchesForScope ? "puedes crear" : "solo lectura/asignadas"} ·
             Areas {canCreateAreasForScope ? "puedes crear" : "solo asignadas"}
           </span>
+        </div>
+
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-emerald-900">
+          <strong>Correo y contrasena:</strong> el sistema no debe mandar una
+          contrasena por correo. En produccion enviara una invitacion segura para
+          que cada persona cree su propia contrasena; en este DEMO solo se deja
+          la invitacion registrada hasta conectar el envio real de correo.
         </div>
 
         <div className="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-3">

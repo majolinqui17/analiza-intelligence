@@ -4,7 +4,7 @@
 
 Users sign in with an assigned account. The UI shows `Crear cuenta`, but it is a controlled account-creation page that explains administrative provisioning. Public self-registration is not part of the product flow. Password recovery is available through Supabase Auth.
 
-For local exploration, use `Entrar al panel ejecutivo DEMO` from the login page. This creates a temporary DEMO admin session without real credentials. It is not intended for production access and can be disabled with `ANALIZA_DISABLE_DEMO_ADMIN=true`.
+For local exploration, use the DEMO admin account from the login page. DEMO access still requires an email and password configured by environment variables; it is not intended for production access and can be disabled with `ANALIZA_DISABLE_DEMO_ADMIN=true`.
 
 ## Roles
 
@@ -40,7 +40,7 @@ After login, users select:
 3. Branch or all assigned branches.
 4. Date range, from and to.
 
-CEO and Webmaster / Administrador may access regional or consolidated views when assigned. Gerente de operaciones is scoped by business line, and Gerente de sucursal is scoped to assigned branches.
+CEO and Webmaster / Administrador may access regional or consolidated views when assigned. Gerente de operaciones is scoped by business line, and Gerente de sucursal is scoped to assigned branches. In the branch dashboard, gerente de sucursal should only see the assigned branch, not the whole network.
 
 The screen that previously appeared as `context` is the executive business view selection screen. It decides what the user is looking at before entering the dashboards:
 
@@ -119,11 +119,11 @@ The DEMO module pages now include structured panels for:
 
 `Mi cuenta` is for profile, password recovery, preferences, and user-level settings. System-wide configuration remains an admin-only responsibility.
 
-Only Webmaster / Administrador can create users or change roles. Gerente de operaciones can upload branch templates for their business line. Gerente de sucursal is read-only.
+Users are created by invitation. The system should not email manual passwords; each invited user creates their own password through the Auth provider. Only Webmaster / Administrador can create global users or change global roles. Gerente de operaciones can invite lower roles inside its scope and validate branch submissions for the business line. Gerente de sucursal can only work inside the assigned branch.
 
 ## Imports
 
-The import center guides users through template download, file upload, column mapping, validation, preview, error review, confirmation, processing, and audit history.
+The import center guides users through connectors and manual monthly forms. Excel downloads remain as fallback, but the primary manual flow is the monthly form by business line, branch and period.
 
 Templates are the root of the system when no API or CRM connector is available. The minimum root templates are appointments, capacity, costs, revenue, services, professionals, targets, result templates by branch, and payroll/bonus sheets.
 
@@ -141,7 +141,7 @@ These files feed branch revenue, target, sales completion, cost of sale, margin,
 
 ## Data Quality
 
-Data quality means the system knows whether the information is complete, valid, consistent, unique, timely, and traceable. When data is incomplete or invalid, affected dashboards show warnings and avoid conclusive insights.
+Data quality means the system knows whether the information is complete, valid, consistent, unique, timely, and traceable. The manager no longer writes a quality score manually: AnaliA calculates it from required fields, source files, suspicious amounts, branch/period consistency, duplicates and traceability. When data is incomplete or invalid, affected dashboards show warnings and avoid conclusive insights.
 
 ## Audit
 

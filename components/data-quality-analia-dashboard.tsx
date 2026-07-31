@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
+  AlertTriangle,
   BarChart3,
   Bot,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   FileSpreadsheet,
   Lightbulb,
   ShieldCheck,
+  UploadCloud,
   Wand2,
 } from "lucide-react";
 
@@ -44,9 +46,57 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
+const commercialUploadRequirements = [
+  {
+    id: "doctor-sales",
+    title: "Excel doctores y montos vendidos",
+    description:
+      "Doctor, especialidad, examen, monto vendido, sucursal, periodo y visitador asociado.",
+    owner: "Gerencia de operaciones Laboratorio",
+  },
+  {
+    id: "medical-reps",
+    title: "Excel visitadores medicos",
+    description:
+      "Visitador, doctores asignados, ventas del mes, zona, seguimiento y cartera activa.",
+    owner: "Gerencia comercial / Laboratorio",
+  },
+  {
+    id: "evaluation-email",
+    title: "Evaluaciones 360 por correo",
+    description:
+      "El equipo responde por correo/formulario anonimo y los resultados llenan automaticamente score, tema y accion.",
+    owner: "Recursos humanos / Operaciones",
+  },
+];
+
+const automaticQualityAlerts = [
+  {
+    title: "Monto sospechoso",
+    reason:
+      "AnaliA compara reactivos, insumos y consumibles contra venta neta, pruebas, historico y meta antes de aceptar el cierre.",
+  },
+  {
+    title: "Sucursal o periodo no cuadran",
+    reason:
+      "Si el archivo dice un mes y la hoja interna trae otro, queda en alerta hasta que alguien lo corrija o lo autorice.",
+  },
+  {
+    title: "Archivo comercial faltante",
+    reason:
+      "Sin doctores o visitadores no se calcula rendimiento medico ni ventas mes a mes por cartera.",
+  },
+  {
+    title: "Duplicado o salto fuera de rango",
+    reason:
+      "El agente revisa duplicados, cambios bruscos contra el mes anterior y valores imposibles antes de alimentar dashboards.",
+  },
+];
+
 export function DataQualityAnaliaDashboard() {
   const activeBusinessLine = useActiveBusinessLine();
   const [appliedIds, setAppliedIds] = useState<Set<string>>(() => new Set());
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, string>>({});
   const visibleSuggestions = useMemo(
     () =>
       activeBusinessLine.isConsolidated
@@ -75,6 +125,13 @@ export function DataQualityAnaliaDashboard() {
       next.add(id);
       return next;
     });
+  }
+
+  function registerUploadedFile(id: string, fileName: string) {
+    setUploadedFiles((current) => ({
+      ...current,
+      [id]: fileName,
+    }));
   }
 
   return (
@@ -146,6 +203,85 @@ export function DataQualityAnaliaDashboard() {
             </article>
           );
         })}
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[1fr_360px]">
+        <div className="rounded-md border bg-card p-4">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <UploadCloud className="size-4 text-primary" />
+                Cargas que reemplazan el formulario de calidad
+              </div>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+                La calidad no se captura a mano. Se alimenta con archivos,
+                evaluaciones por correo y validaciones automaticas de AnaliA.
+              </p>
+            </div>
+            <Badge variant="outline">Laboratorio primero</Badge>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {commercialUploadRequirements.map((requirement) => (
+              <label
+                className="grid gap-3 rounded-md border bg-background p-3 text-sm"
+                key={requirement.id}
+              >
+                <span className="flex items-center gap-2 font-semibold">
+                  <FileSpreadsheet className="size-4 text-primary" />
+                  {requirement.title}
+                </span>
+                <span className="min-h-14 text-xs leading-5 text-muted-foreground">
+                  {requirement.description}
+                </span>
+                <input
+                  accept=".xlsx,.xls,.csv"
+                  className="block w-full cursor-pointer rounded-md border bg-card text-xs file:mr-3 file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-medium file:text-primary-foreground"
+                  onChange={(event) =>
+                    registerUploadedFile(
+                      requirement.id,
+                      event.target.files?.[0]?.name ?? "",
+                    )
+                  }
+                  type="file"
+                />
+                <span className="text-xs text-muted-foreground">
+                  {uploadedFiles[requirement.id]
+                    ? `Listo: ${uploadedFiles[requirement.id]}`
+                    : `Responsable: ${requirement.owner}`}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <aside className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <div className="mb-3 flex items-center gap-2 font-medium">
+            <AlertTriangle className="size-4" />
+            Regla de calidad automatica
+          </div>
+          <p className="leading-6">
+            Si AnaliA detecta un monto sospechoso, no debe esconderlo ni
+            aprobarlo sola: muestra la razon, bloquea conclusiones fuertes y
+            pide validacion humana con trazabilidad.
+          </p>
+        </aside>
+      </section>
+
+      <section className="rounded-md border bg-card p-4">
+        <div className="mb-4 flex items-center gap-2 text-sm font-medium">
+          <ShieldCheck className="size-4 text-primary" />
+          Alertas automaticas que AnaliA revisa
+        </div>
+        <div className="grid gap-3 md:grid-cols-4">
+          {automaticQualityAlerts.map((alert) => (
+            <article className="rounded-md border bg-background p-3" key={alert.title}>
+              <div className="text-sm font-semibold">{alert.title}</div>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                {alert.reason}
+              </p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1fr_360px]">

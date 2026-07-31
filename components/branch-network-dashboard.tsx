@@ -19,6 +19,10 @@ import {
   type BusinessLineSlug,
 } from "@/lib/analytics/business-line-operations";
 import {
+  roleKeys,
+  type RoleKey,
+} from "@/lib/tenant/demo-context";
+import {
   branchScoreWeights,
   buildBranchTrendChart,
   getBranchNetworkScreen,
@@ -30,6 +34,8 @@ import { cn } from "@/lib/utils";
 
 const storageKey = "analiza:selected-context";
 const contextChangeEvent = "analiza:context-change";
+const roleStorageKey = "analiza:demo-role";
+const roleChangeEvent = "analiza:role-change";
 const allOption = "Todos";
 
 type StoredContext = {
@@ -148,6 +154,40 @@ function resolveContextLine(context: StoredContext | null): BusinessLineSlug {
     businessLineName: context?.businessLineName,
     companyName: context?.companyName,
   });
+}
+
+function readActiveDemoRole(): RoleKey {
+  if (typeof window === "undefined") {
+    return "super_admin";
+  }
+
+  const storedRole = window.localStorage.getItem(roleStorageKey);
+
+  if (roleKeys.includes(storedRole as RoleKey)) {
+    return storedRole as RoleKey;
+  }
+
+  return "super_admin";
+}
+
+function normalizeBranchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function branchNamesMatch(left: string, right: string) {
+  const normalizedLeft = normalizeBranchText(left);
+  const normalizedRight = normalizeBranchText(right);
+
+  return (
+    normalizedLeft === normalizedRight ||
+    normalizedLeft.includes(normalizedRight) ||
+    normalizedRight.includes(normalizedLeft)
+  );
 }
 
 function formatPeriod(context: StoredContext | null) {
@@ -986,13 +1026,33 @@ function ScoreWeightsPanel() {
 
 export function BranchNetworkDashboard() {
   const [context, setContext] = useState<StoredContext | null>(null);
+  const [activeRole, setActiveRole] = useState<RoleKey>("super_admin");
   const [filters, setFilters] = useState<BranchFilters>(() => createDefaultFilters());
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [trendBranchIds, setTrendBranchIds] = useState<string[]>([]);
   const lineSlug = useMemo(() => resolveContextLine(context), [context]);
   const screen = useMemo(() => getBranchNetworkScreen(lineSlug), [lineSlug]);
+  const branchScopedRecords = useMemo(() => {
+    if (activeRole !== "gerente_sucursal") {
+      return screen.records;
+    }
+
+    const contextBranchName =
+      context?.branchName && context.branchName !== "Todas las sucursales"
+        ? context.branchName
+        : "";
+    const exactRecords = contextBranchName
+      ? screen.records.filter(
+          (record) =>
+            branchNamesMatch(record.branch, contextBranchName) ||
+            branchNamesMatch(record.city, contextBranchName),
+        )
+      : [];
+
+    return exactRecords.length > 0 ? exactRecords : screen.records.slice(0, 1);
+  }, [activeRole, context?.branchName, screen.records]);
   const filteredRecords = useMemo(() => {
-    return screen.records.filter((record) => {
+    return branchScopedRecords.filter((record) => {
       return (
         (filters.branch === allOption || record.branch === filters.branch) &&
         (filters.region === allOption || record.region === filters.region) &&
@@ -1005,7 +1065,7 @@ export function BranchNetworkDashboard() {
           record.comparableGroup === filters.comparableGroup)
       );
     });
-  }, [filters, screen.records]);
+  }, [branchScopedRecords, filters]);
   const selectedRecord =
     filteredRecords.find((record) => record.id === selectedBranchId) ??
     filteredRecords[0] ??
@@ -1023,21 +1083,30 @@ export function BranchNetworkDashboard() {
       setContext(readStoredContext());
     }
 
+    function refreshRole() {
+      setActiveRole(readActiveDemoRole());
+    }
+
     refreshContext();
+    refreshRole();
     window.addEventListener("storage", refreshContext);
     window.addEventListener(contextChangeEvent, refreshContext);
+    window.addEventListener("storage", refreshRole);
+    window.addEventListener(roleChangeEvent, refreshRole);
 
     return () => {
       window.removeEventListener("storage", refreshContext);
       window.removeEventListener(contextChangeEvent, refreshContext);
+      window.removeEventListener("storage", refreshRole);
+      window.removeEventListener(roleChangeEvent, refreshRole);
     };
   }, []);
 
   useEffect(() => {
     setFilters(createDefaultFilters());
     setSelectedBranchId(null);
-    setTrendBranchIds(screen.records.slice(0, 5).map((record) => record.id));
-  }, [screen]);
+    setTrendBranchIds(branchScopedRecords.slice(0, 5).map((record) => record.id));
+  }, [branchScopedRecords]);
 
   useEffect(() => {
     if (
@@ -1058,6 +1127,11 @@ export function BranchNetworkDashboard() {
             </Badge>
             <Badge variant="outline">Sucursales</Badge>
             <Badge variant="outline">{screen.subtitle}</Badge>
+            {activeRole === "gerente_sucursal" ? (
+              <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
+                Solo mi sucursal
+              </Badge>
+            ) : null}
           </div>
           <div className="grid gap-2">
             <div className="flex items-center gap-3">
@@ -1076,11 +1150,20 @@ export function BranchNetworkDashboard() {
         <ScopeCard context={context} lineSlug={lineSlug} />
       </div>
 
-      <BranchFiltersPanel
-        filters={filters}
-        onChange={setFilters}
-        records={screen.records}
-      />
+      {activeRole === "gerente_sucursal" ? (
+        <section className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">
+          Vista restringida por rol: el gerente de sucursal solo consulta su
+          sucursal asignada. En produccion esta regla se aplicara tambien en la
+          base de datos con organization_id, country_id, company_id,
+          operational_area_id y branch_id.
+        </section>
+      ) : (
+        <BranchFiltersPanel
+          filters={filters}
+          onChange={setFilters}
+          records={branchScopedRecords}
+        />
+      )}
 
       <BranchMetricGrid metrics={getBranchNetworkScreen(lineSlug).metrics} />
 

@@ -10,12 +10,14 @@ import {
   ClipboardList,
   DatabaseZap,
   FileCheck2,
+  FileSpreadsheet,
   History,
   ListChecks,
   LockKeyhole,
   Save,
   ShieldCheck,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -41,13 +43,17 @@ import {
   demoBusinessLineOptions,
   demoCountryOptions,
   regionalCountryId,
+  roleKeys,
   type BranchOption,
+  type RoleKey,
 } from "@/lib/tenant/demo-context";
 import { cn } from "@/lib/utils";
 
 const contextStorageKey = "analiza:selected-context";
 const contextChangeEvent = "analiza:context-change";
 const manualHistoryStorageKey = "analiza:manual-monthly-history";
+const roleStorageKey = "analiza:demo-role";
+const roleChangeEvent = "analiza:role-change";
 
 type StoredContext = {
   branchId?: string;
@@ -74,6 +80,12 @@ type ManualMetricCardProps = {
   label: string;
   note: string;
   value: string;
+};
+
+type AutomaticQualityAlert = {
+  title: string;
+  reason: string;
+  severity: "alta" | "media" | "baja";
 };
 
 const manualStatuses: ManualMonthlySubmissionStatus[] = [
@@ -227,6 +239,20 @@ function readLocalManualHistory() {
   }
 }
 
+function readActiveDemoRole(): RoleKey {
+  if (typeof window === "undefined") {
+    return "super_admin";
+  }
+
+  const storedRole = window.localStorage.getItem(roleStorageKey);
+
+  if (roleKeys.includes(storedRole as RoleKey)) {
+    return storedRole as RoleKey;
+  }
+
+  return "super_admin";
+}
+
 function toImportBusinessLine(line: ActiveBusinessLine): ImportBusinessLine {
   if (line === "Laboratorio") {
     return "Laboratorio";
@@ -335,6 +361,23 @@ function findSelectedBranch(
   return branchOptions.find((branch) => branch.id === branchId) ?? null;
 }
 
+function getDefaultAssignedBranchId(
+  line: ImportBusinessLine,
+  branchOptions: BranchOption[],
+) {
+  if (line === "Laboratorio") {
+    return (
+      branchOptions.find((branch) =>
+        normalizeBranchText(branch.name).includes("escalon"),
+      )?.id ??
+      branchOptions[0]?.id ??
+      ""
+    );
+  }
+
+  return branchOptions[0]?.id ?? "";
+}
+
 function getMonthEndDate(period: string) {
   if (!/^\d{4}-\d{2}$/.test(period)) {
     return "2026-07-31";
@@ -410,6 +453,7 @@ function buildInitialFormValues(
   line: ImportBusinessLine,
   context: StoredContext | null,
   branchOptions: BranchOption[],
+  activeRole: RoleKey,
 ) {
   const fields = getManualMonthlyFormStepsForLine(line).flatMap(
     (step) => step.fields,
@@ -432,7 +476,10 @@ function buildInitialFormValues(
     (branch) => branch.id === contextBranchId,
   )
     ? contextBranchId
-    : branchByName?.id ?? "";
+    : branchByName?.id ??
+      (activeRole === "gerente_sucursal"
+        ? getDefaultAssignedBranchId(line, branchOptions)
+        : "");
   values.data_cutoff_date = context?.periodEnd ?? getMonthEndDate(values.period);
   values.load_deadline_date = getMonthlyLoadDeadline(values.period);
   values.manager_attestation =
@@ -525,6 +572,10 @@ function ManualMetricCard({ icon: Icon, label, note, value }: ManualMetricCardPr
 }
 
 function fieldInputType(field: ManualMonthlyFormField) {
+  if (field.inputType === "file") {
+    return "file";
+  }
+
   if (
     field.inputType === "currency" ||
     field.inputType === "number" ||
@@ -552,6 +603,191 @@ function fieldInputStep(field: ManualMonthlyFormField) {
   return undefined;
 }
 
+function normalizeBranchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function branchNamesMatch(left: string, right: string) {
+  const normalizedLeft = normalizeBranchText(left);
+  const normalizedRight = normalizeBranchText(right);
+
+  return (
+    normalizedLeft === normalizedRight ||
+    normalizedLeft.includes(normalizedRight) ||
+    normalizedRight.includes(normalizedLeft)
+  );
+}
+
+function getAutomaticQualityAlerts({
+  line,
+  missingRequiredCount,
+  values,
+}: {
+  line: ImportBusinessLine;
+  missingRequiredCount: number;
+  values: Record<string, string>;
+}) {
+  const alerts: AutomaticQualityAlert[] = [];
+  const netRevenue = numberFromValue(values.net_revenue);
+  const revenueTarget = numberFromValue(values.revenue_target);
+  const directCosts = numberFromValue(values.direct_costs);
+  const variableCosts = numberFromValue(values.variable_costs);
+
+  if (missingRequiredCount > 0) {
+    alerts.push({
+      title: "Campos obligatorios pendientes",
+      reason: `Faltan ${missingRequiredCount} campos requeridos; no conviene publicar conclusiones ejecutivas todavia.`,
+      severity: "media",
+    });
+  }
+
+  if (revenueTarget > 0 && netRevenue > revenueTarget * 1.35) {
+    alerts.push({
+      title: "Ingreso muy arriba de meta",
+      reason:
+        "La venta supera 135% de la meta. AnaliA recomienda validar si hay duplicados, mes incorrecto o venta extraordinaria documentada.",
+      severity: "alta",
+    });
+  }
+
+  if (revenueTarget > 0 && netRevenue > 0 && netRevenue < revenueTarget * 0.5) {
+    alerts.push({
+      title: "Ingreso muy por debajo de meta",
+      reason:
+        "La venta esta por debajo del 50% de la meta. Puede ser real, pero requiere explicacion antes de afectar score o bono.",
+      severity: "alta",
+    });
+  }
+
+  if (netRevenue > 0 && directCosts + variableCosts > netRevenue * 0.85) {
+    alerts.push({
+      title: "Costos presionan margen",
+      reason:
+        "Costos directos y variables consumen mas del 85% del ingreso neto; revisar clasificacion o compras extraordinarias.",
+      severity: "media",
+    });
+  }
+
+  if (line === "Laboratorio") {
+    const labOrders = numberFromValue(values.lab_orders);
+    const labTests = numberFromValue(values.lab_tests);
+    const uniqueClients = numberFromValue(values.lab_unique_clients);
+    const newClients = numberFromValue(values.lab_new_clients);
+    const recurringClients = numberFromValue(values.lab_recurring_clients);
+    const reactiveCost =
+      numberFromValue(values.inventory_reactives_amount) ||
+      numberFromValue(values.reactive_cost);
+    const consumablesAmount = numberFromValue(values.inventory_consumables_amount);
+    const suppliesAmount = numberFromValue(values.inventory_supplies_amount);
+
+    if (netRevenue > 0 && reactiveCost > netRevenue * 0.22) {
+      alerts.push({
+        title: "Monto de reactivos sospechoso",
+        reason:
+          "Reactivos superan 22% del ingreso neto. Validar si el monto corresponde al mes, si incluye inventario acumulado o si hubo compras urgentes.",
+        severity: "alta",
+      });
+    }
+
+    if (labOrders > 0 && labTests / labOrders > 35) {
+      alerts.push({
+        title: "Pruebas por orden fuera de rango",
+        reason:
+          "El promedio de pruebas por orden es muy alto. Puede indicar perfiles duplicados, importacion repetida o campo mal mapeado.",
+        severity: "media",
+      });
+    }
+
+    if (uniqueClients > 0 && newClients + recurringClients > uniqueClients * 1.25) {
+      alerts.push({
+        title: "Clientes duplicados o mal clasificados",
+        reason:
+          "Clientes nuevos y recurrentes exceden por mucho los clientes unicos. Revisar definicion antes de comparar crecimiento.",
+        severity: "media",
+      });
+    }
+
+    if (netRevenue > 0 && consumablesAmount + suppliesAmount > netRevenue * 0.18) {
+      alerts.push({
+        title: "Consumibles e insumos altos",
+        reason:
+          "Consumibles e insumos superan 18% de la venta neta. AnaliA sugiere revisar unidades, compras acumuladas y costos mal asignados.",
+        severity: "media",
+      });
+    }
+
+    if (!values.doctors_sales_file?.trim()) {
+      alerts.push({
+        title: "Falta Excel de doctores",
+        reason:
+          "Sin ventas por doctor no se puede explicar demanda medica ni rendimiento comercial por referidor.",
+        severity: "media",
+      });
+    }
+
+    if (!values.medical_reps_sales_file?.trim()) {
+      alerts.push({
+        title: "Falta Excel de visitadores",
+        reason:
+          "Sin ventas por visitador no se puede medir seguimiento medico ni ventas mes a mes por cartera.",
+        severity: "media",
+      });
+    }
+  }
+
+  return alerts;
+}
+
+function getAutomaticQualityScore({
+  alerts,
+  missingRequiredCount,
+}: {
+  alerts: AutomaticQualityAlert[];
+  missingRequiredCount: number;
+}) {
+  const highAlertCount = alerts.filter((alert) => alert.severity === "alta").length;
+  const mediumAlertCount = alerts.filter(
+    (alert) => alert.severity === "media",
+  ).length;
+
+  return clampPercent(
+    94 - missingRequiredCount * 3 - highAlertCount * 10 - mediumAlertCount * 5,
+  );
+}
+
+function getEffectiveOccupancyForSubmission(
+  line: ImportBusinessLine,
+  values: Record<string, string>,
+) {
+  if (line === "Laboratorio") {
+    const uniqueClients = numberFromValue(values.lab_unique_clients);
+    const recurringClients = numberFromValue(values.lab_recurring_clients);
+
+    if (uniqueClients > 0) {
+      return clampPercent((recurringClients / uniqueClients) * 100);
+    }
+  }
+
+  return clampPercent(numberFromValue(values.effective_occupancy_rate));
+}
+
+function alertSeverityClass(severity: AutomaticQualityAlert["severity"]) {
+  if (severity === "alta") {
+    return "border-red-200 bg-red-50 text-red-900";
+  }
+
+  if (severity === "media") {
+    return "border-amber-200 bg-amber-50 text-amber-900";
+  }
+
+  return "border-emerald-200 bg-emerald-50 text-emerald-900";
+}
+
 function ManualField({
   areaManagerOptions,
   branchManagerOptions,
@@ -571,6 +807,7 @@ function ManualField({
 }) {
   const isCurrency = field.inputType === "currency";
   const isPercent = field.inputType === "percent";
+  const isFile = field.inputType === "file";
   const isNumeric =
     field.inputType === "currency" ||
     field.inputType === "number" ||
@@ -583,6 +820,10 @@ function ManualField({
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     onChange(event.target.value);
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    onChange(event.target.files?.[0]?.name ?? "");
   }
 
   function renderTextOption(option: string) {
@@ -654,12 +895,28 @@ function ManualField({
               : null}
             {areaManagerOptions.map(renderTextOption)}
           </select>
+        ) : isFile ? (
+          <div className="grid gap-2">
+            <Input
+              accept=".xlsx,.xls,.csv"
+              className="h-12 cursor-pointer text-base file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground"
+              disabled={readOnly}
+              onChange={handleFileChange}
+              type="file"
+            />
+            {value ? (
+              <span className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                <FileSpreadsheet className="size-3 text-primary" />
+                {value}
+              </span>
+            ) : null}
+          </div>
         ) : isCurrency ? (
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
             $
           </span>
         ) : null}
-        {!isSelectField ? (
+        {!isSelectField && !isFile ? (
           <Input
             className={cn(
               "h-12 text-base",
@@ -688,6 +945,163 @@ function ManualField({
         Unidad: {field.unit}
       </span>
     </label>
+  );
+}
+
+function AutomaticQualityPanel({
+  alerts,
+  score,
+}: {
+  alerts: AutomaticQualityAlert[];
+  score: number;
+}) {
+  return (
+    <section className="grid gap-3 rounded-md border bg-card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 font-medium">
+          <ShieldCheck className="size-4 text-primary" />
+          Calidad automatica AnaliA
+        </div>
+        <Badge variant="outline">{Math.round(score)}/100</Badge>
+      </div>
+      <p className="text-sm leading-6 text-muted-foreground">
+        AnaliA revisa coherencia, archivos, montos, fechas y rangos antes de
+        dejar que los dashboards traten el cierre como confiable.
+      </p>
+      <div className="grid gap-2">
+        {alerts.length > 0 ? (
+          alerts.slice(0, 4).map((alert) => (
+            <div
+              className={cn("rounded-md border p-3 text-xs leading-5", alertSeverityClass(alert.severity))}
+              key={`${alert.title}-${alert.reason}`}
+            >
+              <div className="font-semibold">{alert.title}</div>
+              <p className="mt-1 opacity-90">{alert.reason}</p>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs leading-5 text-emerald-900">
+            No hay alertas fuertes con los datos capturados. Igual debe existir
+            trazabilidad antes de aprobar resultados reales.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function YearToDateDashboard({
+  activeLine,
+  entries,
+  selectedBranch,
+}: {
+  activeLine: ImportBusinessLine;
+  entries: ManualMonthlyHistoryEntry[];
+  selectedBranch: BranchOption | null;
+}) {
+  const selectedBranchName = selectedBranch?.name ?? "";
+  const lineEntries = entries
+    .filter((entry) => entry.businessLine === activeLine)
+    .filter((entry) => entry.period.startsWith("2026-"))
+    .filter((entry) => entry.status !== "Bloqueado por calidad DEMO");
+  const branchEntries = selectedBranchName
+    ? lineEntries.filter((entry) => branchNamesMatch(entry.branch, selectedBranchName))
+    : lineEntries;
+  const scopedEntries = branchEntries.length > 0 ? branchEntries : lineEntries;
+  const totalRevenue = scopedEntries.reduce(
+    (sum, entry) => sum + entry.netRevenue,
+    0,
+  );
+  const totalTarget = scopedEntries.reduce(
+    (sum, entry) => sum + entry.revenueTarget,
+    0,
+  );
+  const totalActivity = scopedEntries.reduce(
+    (sum, entry) => sum + entry.activityVolume,
+    0,
+  );
+  const averageQuality =
+    scopedEntries.length > 0
+      ? scopedEntries.reduce((sum, entry) => sum + entry.dataQualityScore, 0) /
+        scopedEntries.length
+      : 0;
+  const maxRevenue = Math.max(
+    ...scopedEntries.map((entry) => entry.netRevenue),
+    1,
+  );
+
+  return (
+    <section className="grid gap-4 rounded-md border bg-card p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <TrendingUp className="size-4 text-primary" />
+            Dashboard Year to date
+          </div>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Acumulado 2026 por linea y sucursal seleccionada. Si la sucursal no
+            tiene historico DEMO, se muestra la linea completa como referencia.
+          </p>
+        </div>
+        <Badge variant="outline">
+          {selectedBranch?.name ?? "Todas las sucursales"}
+        </Badge>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <ManualMetricCard
+          icon={Sparkles}
+          label="Ingreso YTD"
+          note={`${scopedEntries.length} cierres considerados.`}
+          value={formatCurrency(totalRevenue)}
+        />
+        <ManualMetricCard
+          icon={ClipboardList}
+          label="Meta YTD"
+          note={`Cumplimiento ${totalTarget > 0 ? Math.round((totalRevenue / totalTarget) * 100) : 0}%.`}
+          value={formatCurrency(totalTarget)}
+        />
+        <ManualMetricCard
+          icon={ListChecks}
+          label={activeLine === "Laboratorio" ? "Actividad / ordenes" : "Actividad"}
+          note="Volumen acumulado del periodo."
+          value={totalActivity.toLocaleString("en-US")}
+        />
+        <ManualMetricCard
+          icon={ShieldCheck}
+          label="Calidad media YTD"
+          note="Calculada por AnaliA."
+          value={formatPercent(averageQuality)}
+        />
+      </div>
+
+      <div className="grid gap-2">
+        {scopedEntries
+          .slice()
+          .sort((left, right) => left.period.localeCompare(right.period))
+          .map((entry) => (
+            <div className="grid gap-1" key={entry.id}>
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <span className="font-medium">
+                  {entry.period} · {entry.branch}
+                </span>
+                <span className="text-muted-foreground">
+                  {formatCurrency(entry.netRevenue)} / meta{" "}
+                  {formatCurrency(entry.revenueTarget)}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-muted">
+                <div
+                  className="h-2 rounded-full bg-primary"
+                  style={{
+                    width: `${Math.max(6, (entry.netRevenue / maxRevenue) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+      </div>
+    </section>
   );
 }
 
@@ -742,6 +1156,7 @@ export function ManualMonthlyEntryDashboard() {
   const activeBusinessLine = useActiveBusinessLine();
   const activeLine = toImportBusinessLine(activeBusinessLine.line);
   const [context, setContext] = useState<StoredContext | null>(null);
+  const [activeRole, setActiveRole] = useState<RoleKey>("super_admin");
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [localHistory, setLocalHistory] = useState<LocalManualMonthlySubmission[]>(
@@ -757,13 +1172,22 @@ export function ManualMonthlyEntryDashboard() {
       setContext(readStoredContext());
     }
 
+    function refreshRole() {
+      setActiveRole(readActiveDemoRole());
+    }
+
     refreshContext();
+    refreshRole();
     window.addEventListener("storage", refreshContext);
     window.addEventListener(contextChangeEvent, refreshContext);
+    window.addEventListener("storage", refreshRole);
+    window.addEventListener(roleChangeEvent, refreshRole);
 
     return () => {
       window.removeEventListener("storage", refreshContext);
       window.removeEventListener(contextChangeEvent, refreshContext);
+      window.removeEventListener("storage", refreshRole);
+      window.removeEventListener(roleChangeEvent, refreshRole);
     };
   }, []);
 
@@ -810,9 +1234,11 @@ export function ManualMonthlyEntryDashboard() {
   }, [branchOptions, selectedAreaManagerName]);
 
   useEffect(() => {
-    setFormValues(buildInitialFormValues(activeLine, context, branchOptions));
+    setFormValues(
+      buildInitialFormValues(activeLine, context, branchOptions, activeRole),
+    );
     setActiveStepIndex(0);
-  }, [activeLine, branchOptions, context]);
+  }, [activeLine, activeRole, branchOptions, context]);
 
   const allFields = useMemo(
     () => formSteps.flatMap((step) => step.fields),
@@ -878,6 +1304,24 @@ export function ManualMonthlyEntryDashboard() {
     formValues.period ?? "",
     todayIsoDate,
   );
+  const automaticQualityAlerts = useMemo(
+    () =>
+      getAutomaticQualityAlerts({
+        line: activeLine,
+        missingRequiredCount: requiredMissing.length,
+        values: formValues,
+      }),
+    [activeLine, formValues, requiredMissing.length],
+  );
+  const automaticQualityScore = useMemo(
+    () =>
+      getAutomaticQualityScore({
+        alerts: automaticQualityAlerts,
+        missingRequiredCount: requiredMissing.length,
+      }),
+    [automaticQualityAlerts, requiredMissing.length],
+  );
+  const lockAssignedScope = activeRole === "gerente_sucursal";
 
   function updateField(fieldId: string, value: string) {
     setFormValues((currentValue) => {
@@ -926,10 +1370,7 @@ export function ManualMonthlyEntryDashboard() {
       "Sucursal pendiente";
     const createdAt = todayIsoDate;
     const deadlineStatus = getDeadlineStatus(period, createdAt);
-    const qualityScore = clampPercent(
-      numberFromValue(formValues.data_quality_score) ||
-        (requiredMissing.length > 0 ? 65 : 86),
-    );
+    const qualityScore = automaticQualityScore;
     const submissionStatus =
       status === "Publicado DEMO" && qualityScore < 70
         ? "Bloqueado por calidad DEMO"
@@ -948,7 +1389,7 @@ export function ManualMonthlyEntryDashboard() {
       deadlineStatus,
       demoFlag: true,
       effectiveOccupancyRate: clampPercent(
-        numberFromValue(formValues.effective_occupancy_rate),
+        getEffectiveOccupancyForSubmission(activeLine, formValues),
       ),
       grossMarginRate: clampPercent(numberFromValue(formValues.gross_margin_rate)),
       id: `manual-${activeLine.toLowerCase()}-${period}-${Date.now()}`,
@@ -1030,6 +1471,11 @@ export function ManualMonthlyEntryDashboard() {
               </Badge>
               <Badge className={tone.badge}>{activeLine}</Badge>
               <Badge variant="outline">Formulario manual</Badge>
+              {lockAssignedScope ? (
+                <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
+                  Sucursal asignada
+                </Badge>
+              ) : null}
             </div>
 
             <div className="flex items-start gap-4">
@@ -1164,7 +1610,14 @@ export function ManualMonthlyEntryDashboard() {
                     key={field.id}
                     onChange={(value) => updateField(field.id, value)}
                     readOnly={
-                      ["area_zone", "load_deadline_date"].includes(field.id)
+                      ["area_zone", "load_deadline_date"].includes(field.id) ||
+                      field.id.startsWith("team_feedback_") ||
+                      (lockAssignedScope &&
+                        [
+                          "branch_reported",
+                          "manager_name",
+                          "area_manager_name",
+                        ].includes(field.id))
                     }
                     value={formValues[field.id] ?? ""}
                   />
@@ -1223,6 +1676,11 @@ export function ManualMonthlyEntryDashboard() {
           </article>
 
           <aside className="grid content-start gap-4">
+            <AutomaticQualityPanel
+              alerts={automaticQualityAlerts}
+              score={automaticQualityScore}
+            />
+
             <section className={cn("rounded-md border bg-card p-4", tone.border)}>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 font-medium">
@@ -1312,11 +1770,17 @@ export function ManualMonthlyEntryDashboard() {
         />
         <ManualMetricCard
           icon={ShieldCheck}
-          label="Calidad media"
+          label="Calidad AnaliA"
           note={`${summary.qualityWarnings} cierres con alerta.`}
-          value={formatPercent(summary.averageDataQualityScore)}
+          value={formatPercent(automaticQualityScore)}
         />
       </div>
+
+      <YearToDateDashboard
+        activeLine={activeLine}
+        entries={historyEntries}
+        selectedBranch={selectedBranch}
+      />
 
       <section className="grid gap-3 rounded-md border bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
