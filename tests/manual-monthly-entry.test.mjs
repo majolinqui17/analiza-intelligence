@@ -111,9 +111,8 @@ assert(
 );
 for (const requiredLabField of [
   "lab_financial_target",
-  "lab_goal_completion_rate",
   "lab_total_sales",
-  "lab_sales_without_tax",
+  "lab_cost_of_sale",
   "lab_medical_order_sales",
   "lab_medical_order_count",
   "lab_total_orders",
@@ -123,9 +122,9 @@ for (const requiredLabField of [
   "lab_rent_expense",
   "lab_personnel_expense",
   "lab_phlebotomists_count",
-  "lab_profiles_total",
   "inventory_consumables_amount",
   "inventory_reactives_quantity",
+  "medical_exam_sales_file",
 ]) {
   assert(
     importOperations.includes(requiredLabField),
@@ -138,6 +137,14 @@ for (const retiredLabField of [
   "lab_recurring_clients",
   "lab_orders_per_client",
   "lab_tests",
+  "lab_goal_completion_rate",
+  "lab_sales_without_tax",
+  "lab_margin_rate",
+  "lab_margin_amount",
+  "lab_operating_profit",
+  "lab_profiles_total",
+  "doctors_sales_file",
+  "medical_reps_sales_file",
 ]) {
   assert(
     !importOperations.includes(retiredLabField),

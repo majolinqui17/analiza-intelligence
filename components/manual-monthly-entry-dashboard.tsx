@@ -509,7 +509,6 @@ function resolveNetRevenue(
 ) {
   if (line === "Laboratorio") {
     return (
-      numberFromValue(values.lab_sales_without_tax) ||
       numberFromValue(values.lab_total_sales) ||
       numberFromValue(values.net_revenue)
     );
@@ -537,10 +536,14 @@ function resolveGrossMarginRate(
   values: Record<string, string>,
 ) {
   if (line === "Laboratorio") {
-    return (
-      numberFromValue(values.lab_margin_rate) ||
-      numberFromValue(values.gross_margin_rate)
-    );
+    const totalSales = numberFromValue(values.lab_total_sales);
+    const costOfSale = numberFromValue(values.lab_cost_of_sale);
+
+    if (totalSales > 0 && costOfSale >= 0) {
+      return ((totalSales - costOfSale) / totalSales) * 100;
+    }
+
+    return numberFromValue(values.gross_margin_rate);
   }
 
   return numberFromValue(values.gross_margin_rate);
@@ -746,7 +749,7 @@ function getAutomaticQualityAlerts({
     alerts.push({
       title: "Costos presionan margen",
       reason:
-        "Costos directos y variables consumen mas del 85% del ingreso neto; revisar clasificacion o compras extraordinarias.",
+        "Costos directos y variables consumen mas del 85% del ingreso registrado; revisar clasificacion o compras extraordinarias.",
       severity: "media",
     });
   }
@@ -763,7 +766,6 @@ function getAutomaticQualityAlerts({
     const classifiedClients =
       numberFromValue(values.lab_analiza_clients) +
       numberFromValue(values.lab_drsv_clients);
-    const profilesTotal = numberFromValue(values.lab_profiles_total);
     const reactiveCost =
       numberFromValue(values.inventory_reactives_amount) ||
       numberFromValue(values.reactive_cost);
@@ -774,7 +776,7 @@ function getAutomaticQualityAlerts({
       alerts.push({
         title: "Monto de reactivos sospechoso",
         reason:
-          "Reactivos superan 22% del ingreso neto. Validar si el monto corresponde al mes, si incluye inventario acumulado o si hubo compras urgentes.",
+          "Reactivos superan 22% de la venta registrada. Validar si el monto corresponde al mes, si incluye inventario acumulado o si hubo compras urgentes.",
         severity: "alta",
       });
     }
@@ -797,38 +799,20 @@ function getAutomaticQualityAlerts({
       });
     }
 
-    if (labOrders > 0 && profilesTotal / labOrders > 8) {
-      alerts.push({
-        title: "Perfiles por orden fuera de rango",
-        reason:
-          "El total de perfiles es muy alto frente a las ordenes. Puede ser real, pero conviene revisar duplicados o captura en unidad equivocada.",
-        severity: "media",
-      });
-    }
-
     if (netRevenue > 0 && consumablesAmount + suppliesAmount > netRevenue * 0.18) {
       alerts.push({
         title: "Consumibles e insumos altos",
         reason:
-          "Consumibles e insumos superan 18% de la venta neta. AnaliA sugiere revisar unidades, compras acumuladas y costos mal asignados.",
+          "Consumibles e insumos superan 18% de la venta registrada. AnaliA sugiere revisar unidades, compras acumuladas y costos mal asignados.",
         severity: "media",
       });
     }
 
-    if (!values.doctors_sales_file?.trim()) {
+    if (!values.medical_exam_sales_file?.trim()) {
       alerts.push({
-        title: "Falta Excel de doctores",
+        title: "Falta reporte de examenes y montos",
         reason:
-          "Sin ventas por doctor no se puede explicar demanda medica ni rendimiento comercial por referidor.",
-        severity: "media",
-      });
-    }
-
-    if (!values.medical_reps_sales_file?.trim()) {
-      alerts.push({
-        title: "Falta Excel de visitadores",
-        reason:
-          "Sin ventas por visitador no se puede medir seguimiento medico ni ventas mes a mes por cartera.",
+          "Sin este Excel no se puede validar venta por doctor, examen, sucursal, monto vendido y visitador.",
         severity: "media",
       });
     }
@@ -859,13 +843,14 @@ function getEffectiveOccupancyForSubmission(
   values: Record<string, string>,
 ) {
   if (line === "Laboratorio") {
-    const goalCompletionRate = numberFromValue(values.lab_goal_completion_rate);
+    const totalSales = numberFromValue(values.lab_total_sales);
+    const revenueTarget = numberFromValue(values.lab_financial_target);
     const totalClients = numberFromValue(values.lab_total_clients);
     const analizaClients = numberFromValue(values.lab_analiza_clients);
     const drsvClients = numberFromValue(values.lab_drsv_clients);
 
-    if (goalCompletionRate > 0) {
-      return goalCompletionRate;
+    if (revenueTarget > 0) {
+      return (totalSales / revenueTarget) * 100;
     }
 
     if (totalClients > 0) {

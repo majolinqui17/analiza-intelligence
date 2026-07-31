@@ -11,13 +11,14 @@ La via manual principal para actualizar Analiza Intelligence sera un formulario 
 - El gerente de sucursal y el gerente de area se eligen desde listas derivadas del catalogo; no se capturan como texto libre.
 - El catalogo de sucursales incluye gerente de sucursal, gerente de area, pais, zona y linea de negocio desde `ddddd2.xlsx`.
 - El cierre captura contexto, resultados comerciales, operacion, citas, capacidad, costos, margen y calidad.
-- En Laboratorio, el formulario ya no usa los campos genericos de capacidad/equipo. Sigue la plantilla de resultados y pide las secciones amarillas: financiero, datos generales, base de clientes, gastos, personal/perfiles e inventario.
+- En Laboratorio, el formulario ya no usa los campos genericos de capacidad/equipo. Sigue la plantilla de resultados y pide las secciones amarillas: financiero, datos generales, base de clientes, gastos, personal e inventario.
+- La seccion financiera de Laboratorio solo pide Meta, Venta Total y Costo de la Venta; margen, alcance y utilidad se calculan desde esos datos cuando aplique.
 - El primer paso de Laboratorio precarga mes, sucursal, gerente de sucursal, gerente de area, departamento, fecha de corte y fecha limite de carga desde el contexto y catalogo activo.
 - Los renglones no amarillos de la plantilla, como totales, promedios o validaciones, deben calcularse desde los valores ingresados y no capturarse como texto libre.
-- Laboratorio captura personal de la sucursal, como flebotomistas, atencion al cliente, enfermeras, area tecnica, limpieza/vigilantes y total de perfiles, para que productividad y bonos no dependan de texto fijo del dashboard.
+- Laboratorio captura personal de la sucursal, como flebotomistas, atencion al cliente, enfermeras, area tecnica y limpieza/vigilantes, para que productividad y bonos no dependan de texto fijo del dashboard.
 - El cierre de Laboratorio incluye cantidad y monto de consumibles, insumos y reactivos. AnaliA compara esos montos contra ingreso, ordenes, costos e historico antes de tratarlos como confiables.
 - La calidad ya no se captura como un score manual. AnaliA calcula el score con completitud, coherencia, archivos cargados, montos sospechosos, sucursal, periodo, duplicados y trazabilidad.
-- Los Excel comerciales de doctores/montos vendidos y visitadores medicos se cargan como fuentes de apoyo para ventas mensuales por referidor y cartera medica.
+- El Excel comercial de examenes medicos y montos vendidos se carga como una sola fuente de apoyo con columnas Fecha, Sucursal, Doctor, Examen, Especialidad, Area, Total y Visitador.
 - La evaluacion 360 se realizara por correo o formulario anonimo; sus resultados llenan automaticamente score, tema cualitativo y accion sugerida.
 - La pantalla muestra un bloque Year to date para revisar acumulado 2026 por linea y sucursal seleccionada.
 - Cada registro conserva historial por linea, sucursal, periodo, fuente, estado y marca `DEMO`.
@@ -60,7 +61,7 @@ En el prototipo, los cierres guardados por el formulario viven en `localStorage`
 - Version activa, version anterior, motivo de reemplazo y auditoria.
 - Fuente de datos: formulario, conector, carga Excel o correccion aprobada.
 - Score de calidad y lista de reglas bloqueantes o advertencias.
-- Archivos comerciales asociados: doctores y montos vendidos, visitadores medicos, evaluaciones 360 anonimas y cualquier conector equivalente.
+- Archivos comerciales asociados: reporte de examenes medicos y montos vendidos, evaluaciones 360 anonimas y cualquier conector equivalente.
 - Deadline del dia 5 del mes siguiente, estado de puntualidad y efecto en score/bono.
 
 ## Calidad y privacidad
@@ -71,7 +72,7 @@ En el prototipo, los cierres guardados por el formulario viven en `localStorage`
 - La carga tardia queda marcada como penalizacion DEMO para score, disciplina y bono sugerido.
 - La evaluacion 360 debe guardarse como senal anonima y cualitativa; no debe exponer colaboradores ni usarse para represalias.
 - Si el score de calidad automatico baja de 70%, el cierre debe quedar bloqueado o marcado con advertencia.
-- Si un monto parece sospechoso, AnaliA debe mostrar la razon concreta, por ejemplo reactivos demasiado altos frente a venta sin IVA, clientes Analiza/DRSV que superan clientes totales, ordenes por canal que no cuadran con ordenes totales, perfiles por orden fuera de rango, archivo de doctores faltante o periodo inconsistente.
+- Si un monto parece sospechoso, AnaliA debe mostrar la razon concreta, por ejemplo reactivos demasiado altos frente a venta total, clientes Analiza/DRSV que superan clientes totales, ordenes por canal que no cuadran con ordenes totales, archivo comercial faltante o periodo inconsistente.
 - Los dashboards ejecutivos no deben presentar conclusiones fuertes cuando la calidad sea insuficiente.
 
 ## Conectores
