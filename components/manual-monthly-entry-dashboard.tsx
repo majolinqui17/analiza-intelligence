@@ -503,6 +503,75 @@ function numberFromValue(value: string | undefined) {
   return Number.isFinite(parsedValue) ? parsedValue : 0;
 }
 
+function resolveNetRevenue(
+  line: ImportBusinessLine,
+  values: Record<string, string>,
+) {
+  if (line === "Laboratorio") {
+    return (
+      numberFromValue(values.lab_sales_without_tax) ||
+      numberFromValue(values.lab_total_sales) ||
+      numberFromValue(values.net_revenue)
+    );
+  }
+
+  return numberFromValue(values.net_revenue);
+}
+
+function resolveRevenueTarget(
+  line: ImportBusinessLine,
+  values: Record<string, string>,
+) {
+  if (line === "Laboratorio") {
+    return (
+      numberFromValue(values.lab_financial_target) ||
+      numberFromValue(values.revenue_target)
+    );
+  }
+
+  return numberFromValue(values.revenue_target);
+}
+
+function resolveGrossMarginRate(
+  line: ImportBusinessLine,
+  values: Record<string, string>,
+) {
+  if (line === "Laboratorio") {
+    return (
+      numberFromValue(values.lab_margin_rate) ||
+      numberFromValue(values.gross_margin_rate)
+    );
+  }
+
+  return numberFromValue(values.gross_margin_rate);
+}
+
+function resolveDirectAndVariableCosts(
+  line: ImportBusinessLine,
+  values: Record<string, string>,
+) {
+  if (line === "Laboratorio") {
+    const inventoryAmounts =
+      numberFromValue(values.inventory_consumables_amount) +
+      numberFromValue(values.inventory_supplies_amount) +
+      numberFromValue(values.inventory_reactives_amount);
+
+    return {
+      directCosts:
+        numberFromValue(values.lab_cost_of_sale) ||
+        numberFromValue(values.direct_costs),
+      variableCosts:
+        inventoryAmounts ||
+        numberFromValue(values.variable_costs),
+    };
+  }
+
+  return {
+    directCosts: numberFromValue(values.direct_costs),
+    variableCosts: numberFromValue(values.variable_costs),
+  };
+}
+
 function clampPercent(value: number) {
   return Math.min(100, Math.max(0, value));
 }
@@ -512,9 +581,16 @@ function resolveActivityVolume(
   values: Record<string, string>,
 ) {
   if (line === "Laboratorio") {
+    const channelOrders =
+      numberFromValue(values.lab_medical_order_count) +
+      numberFromValue(values.lab_no_doctor_order_count) +
+      numberFromValue(values.lab_analiza_order_count) +
+      numberFromValue(values.lab_drsv_order_count) +
+      numberFromValue(values.lab_home_visit_count);
+
     return (
-      numberFromValue(values.lab_orders) ||
-      numberFromValue(values.lab_tests) ||
+      numberFromValue(values.lab_total_orders) ||
+      channelOrders ||
       numberFromValue(values.appointments_completed)
     );
   }
@@ -633,10 +709,12 @@ function getAutomaticQualityAlerts({
   values: Record<string, string>;
 }) {
   const alerts: AutomaticQualityAlert[] = [];
-  const netRevenue = numberFromValue(values.net_revenue);
-  const revenueTarget = numberFromValue(values.revenue_target);
-  const directCosts = numberFromValue(values.direct_costs);
-  const variableCosts = numberFromValue(values.variable_costs);
+  const netRevenue = resolveNetRevenue(line, values);
+  const revenueTarget = resolveRevenueTarget(line, values);
+  const { directCosts, variableCosts } = resolveDirectAndVariableCosts(
+    line,
+    values,
+  );
 
   if (missingRequiredCount > 0) {
     alerts.push({
@@ -674,11 +752,18 @@ function getAutomaticQualityAlerts({
   }
 
   if (line === "Laboratorio") {
-    const labOrders = numberFromValue(values.lab_orders);
-    const labTests = numberFromValue(values.lab_tests);
-    const uniqueClients = numberFromValue(values.lab_unique_clients);
-    const newClients = numberFromValue(values.lab_new_clients);
-    const recurringClients = numberFromValue(values.lab_recurring_clients);
+    const labOrders = numberFromValue(values.lab_total_orders);
+    const channelOrders =
+      numberFromValue(values.lab_medical_order_count) +
+      numberFromValue(values.lab_no_doctor_order_count) +
+      numberFromValue(values.lab_analiza_order_count) +
+      numberFromValue(values.lab_drsv_order_count) +
+      numberFromValue(values.lab_home_visit_count);
+    const totalClients = numberFromValue(values.lab_total_clients);
+    const classifiedClients =
+      numberFromValue(values.lab_analiza_clients) +
+      numberFromValue(values.lab_drsv_clients);
+    const profilesTotal = numberFromValue(values.lab_profiles_total);
     const reactiveCost =
       numberFromValue(values.inventory_reactives_amount) ||
       numberFromValue(values.reactive_cost);
@@ -694,20 +779,29 @@ function getAutomaticQualityAlerts({
       });
     }
 
-    if (labOrders > 0 && labTests / labOrders > 35) {
+    if (labOrders > 0 && channelOrders > labOrders * 1.2) {
       alerts.push({
-        title: "Pruebas por orden fuera de rango",
+        title: "Ordenes por canal no cuadran",
         reason:
-          "El promedio de pruebas por orden es muy alto. Puede indicar perfiles duplicados, importacion repetida o campo mal mapeado.",
+          "La suma de ordenes por origen supera demasiado las ordenes totales. Puede haber duplicados o una clasificacion mezclada.",
         severity: "media",
       });
     }
 
-    if (uniqueClients > 0 && newClients + recurringClients > uniqueClients * 1.25) {
+    if (totalClients > 0 && classifiedClients > totalClients * 1.15) {
       alerts.push({
         title: "Clientes duplicados o mal clasificados",
         reason:
-          "Clientes nuevos y recurrentes exceden por mucho los clientes unicos. Revisar definicion antes de comparar crecimiento.",
+          "Clientes Analiza y DRSV exceden el total de clientes. Revisar clasificacion antes de comparar crecimiento.",
+        severity: "media",
+      });
+    }
+
+    if (labOrders > 0 && profilesTotal / labOrders > 8) {
+      alerts.push({
+        title: "Perfiles por orden fuera de rango",
+        reason:
+          "El total de perfiles es muy alto frente a las ordenes. Puede ser real, pero conviene revisar duplicados o captura en unidad equivocada.",
         severity: "media",
       });
     }
@@ -765,11 +859,17 @@ function getEffectiveOccupancyForSubmission(
   values: Record<string, string>,
 ) {
   if (line === "Laboratorio") {
-    const uniqueClients = numberFromValue(values.lab_unique_clients);
-    const recurringClients = numberFromValue(values.lab_recurring_clients);
+    const goalCompletionRate = numberFromValue(values.lab_goal_completion_rate);
+    const totalClients = numberFromValue(values.lab_total_clients);
+    const analizaClients = numberFromValue(values.lab_analiza_clients);
+    const drsvClients = numberFromValue(values.lab_drsv_clients);
 
-    if (uniqueClients > 0) {
-      return clampPercent((recurringClients / uniqueClients) * 100);
+    if (goalCompletionRate > 0) {
+      return goalCompletionRate;
+    }
+
+    if (totalClients > 0) {
+      return clampPercent(((analizaClients + drsvClients) / totalClients) * 100);
     }
   }
 
@@ -834,8 +934,32 @@ function ManualField({
     );
   }
 
+  const contextFieldIds = [
+    "period",
+    "branch_reported",
+    "manager_name",
+    "area_manager_name",
+    "area_zone",
+    "data_cutoff_date",
+    "load_deadline_date",
+    "manager_attestation",
+    "late_reason",
+    "edit_authorization_code",
+  ];
+  const isTemplateInput =
+    field.required &&
+    !readOnly &&
+    !isFile &&
+    !field.id.startsWith("team_feedback_") &&
+    !contextFieldIds.includes(field.id);
+
   return (
-    <label className="grid gap-3 rounded-md border bg-card p-4 text-sm shadow-sm">
+    <label
+      className={cn(
+        "grid gap-3 rounded-md border bg-card p-4 text-sm shadow-sm",
+        isTemplateInput && "border-amber-200 bg-amber-50/60",
+      )}
+    >
       <span className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-base font-semibold tracking-normal">
           {field.label}
@@ -1391,13 +1515,15 @@ export function ManualMonthlyEntryDashboard() {
       effectiveOccupancyRate: clampPercent(
         getEffectiveOccupancyForSubmission(activeLine, formValues),
       ),
-      grossMarginRate: clampPercent(numberFromValue(formValues.gross_margin_rate)),
+      grossMarginRate: clampPercent(
+        resolveGrossMarginRate(activeLine, formValues),
+      ),
       id: `manual-${activeLine.toLowerCase()}-${period}-${Date.now()}`,
       manager: formValues.manager_name?.trim() || "Gerente pendiente",
-      netRevenue: numberFromValue(formValues.net_revenue),
+      netRevenue: resolveNetRevenue(activeLine, formValues),
       period,
       punctualityScore: getPunctualityScore(deadlineStatus),
-      revenueTarget: numberFromValue(formValues.revenue_target),
+      revenueTarget: resolveRevenueTarget(activeLine, formValues),
       sourceTrace: `DEMO formulario mensual ${activeLine} ${period} / ${selectedBranch?.sourceTrace ?? "catalogo demo"}`,
       status: submissionStatus,
     };

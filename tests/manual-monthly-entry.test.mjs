@@ -109,6 +109,41 @@ assert(
     importOperations.includes("team_feedback_score"),
   "Manual monthly form must include area manager, deadline, and 360 evaluation fields.",
 );
+for (const requiredLabField of [
+  "lab_financial_target",
+  "lab_goal_completion_rate",
+  "lab_total_sales",
+  "lab_sales_without_tax",
+  "lab_medical_order_sales",
+  "lab_medical_order_count",
+  "lab_total_orders",
+  "lab_total_clients",
+  "lab_analiza_clients",
+  "lab_drsv_clients",
+  "lab_rent_expense",
+  "lab_personnel_expense",
+  "lab_phlebotomists_count",
+  "lab_profiles_total",
+  "inventory_consumables_amount",
+  "inventory_reactives_quantity",
+]) {
+  assert(
+    importOperations.includes(requiredLabField),
+    `Laboratorio form must include template field ${requiredLabField}.`,
+  );
+}
+for (const retiredLabField of [
+  "lab_unique_clients",
+  "lab_new_clients",
+  "lab_recurring_clients",
+  "lab_orders_per_client",
+  "lab_tests",
+]) {
+  assert(
+    !importOperations.includes(retiredLabField),
+    `Laboratorio form must not keep retired generic field ${retiredLabField}.`,
+  );
+}
 assert(
   demoContext.includes("gerente_area") &&
     demoContext.includes("managedDemoBranches"),
