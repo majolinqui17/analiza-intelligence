@@ -14,13 +14,15 @@ La via manual principal para actualizar Analiza Intelligence sera un formulario 
 - En Laboratorio, el formulario ya no usa los campos genericos de capacidad/equipo. Sigue la plantilla de resultados y pide las secciones amarillas: financiero, datos generales, base de clientes, gastos, personal e inventario.
 - La seccion financiera de Laboratorio solo pide Meta, Venta Total y Costo de la Venta; margen, alcance y utilidad se calculan desde esos datos cuando aplique.
 - El primer paso de Laboratorio precarga mes, sucursal, gerente de sucursal, gerente de area, departamento, fecha de corte y fecha limite de carga desde el contexto y catalogo activo.
+- La fecha de corte queda bloqueada como el ultimo dia del mes reportado; no debe capturarse manualmente.
+- La fecha limite de carga queda bloqueada al dia 4 del mes siguiente.
 - Los renglones no amarillos de la plantilla, como totales, promedios o validaciones, deben calcularse desde los valores ingresados y no capturarse como texto libre.
 - Laboratorio captura personal de la sucursal, como flebotomistas, atencion al cliente, enfermeras, area tecnica y limpieza/vigilantes, para que productividad y bonos no dependan de texto fijo del dashboard.
 - El cierre de Laboratorio incluye cantidad y monto de consumibles, insumos y reactivos. AnaliA compara esos montos contra ingreso, ordenes, costos e historico antes de tratarlos como confiables.
 - La calidad ya no se captura como un score manual. AnaliA calcula el score con completitud, coherencia, archivos cargados, montos sospechosos, sucursal, periodo, duplicados y trazabilidad.
 - El Excel comercial de examenes medicos y montos vendidos se carga como una sola fuente de apoyo con columnas Fecha, Sucursal, Doctor, Examen, Especialidad, Area, Total y Visitador.
 - La evaluacion 360 se realizara por correo o formulario anonimo; sus resultados llenan automaticamente score, tema cualitativo y accion sugerida.
-- La pantalla muestra un bloque Year to date para revisar acumulado 2026 por linea y sucursal seleccionada.
+- La pantalla muestra un bloque Year to date para revisar acumulado 2026 por linea y sucursal seleccionada. Si la sucursal no tiene datos, no se debe rellenar con otras sucursales.
 - Cada registro conserva historial por linea, sucursal, periodo, fuente, estado y marca `DEMO`.
 - La vista consolidada solo muestra historial; no permite publicar cierres porque no se deben mezclar negocios distintos.
 - AnaliA puede usar estos cierres para Insights, alertas tempranas, metas sugeridas y lectura de salud financiera.
@@ -62,7 +64,7 @@ En el prototipo, los cierres guardados por el formulario viven en `localStorage`
 - Fuente de datos: formulario, conector, carga Excel o correccion aprobada.
 - Score de calidad y lista de reglas bloqueantes o advertencias.
 - Archivos comerciales asociados: reporte de examenes medicos y montos vendidos, evaluaciones 360 anonimas y cualquier conector equivalente.
-- Deadline del dia 5 del mes siguiente, estado de puntualidad y efecto en score/bono.
+- Deadline del dia 4 del mes siguiente, estado de puntualidad y efecto en score/bono.
 
 ## Calidad y privacidad
 

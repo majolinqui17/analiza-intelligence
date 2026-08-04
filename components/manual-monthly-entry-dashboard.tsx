@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -391,11 +391,11 @@ function getMonthEndDate(period: string) {
 
 function getMonthlyLoadDeadline(period: string) {
   if (!/^\d{4}-\d{2}$/.test(period)) {
-    return "2026-08-05";
+    return "2026-08-04";
   }
 
   const [yearValue, monthValue] = period.split("-").map(Number);
-  const deadlineDate = new Date(Date.UTC(yearValue, monthValue, 5));
+  const deadlineDate = new Date(Date.UTC(yearValue, monthValue, 4));
 
   return deadlineDate.toISOString().slice(0, 10);
 }
@@ -480,7 +480,7 @@ function buildInitialFormValues(
       (activeRole === "gerente_sucursal"
         ? getDefaultAssignedBranchId(line, branchOptions)
         : "");
-  values.data_cutoff_date = context?.periodEnd ?? getMonthEndDate(values.period);
+  values.data_cutoff_date = getMonthEndDate(values.period);
   values.load_deadline_date = getMonthlyLoadDeadline(values.period);
   values.manager_attestation =
     "Confirmo cierre mensual anonimo, conciliado y sin datos personales visibles.";
@@ -586,7 +586,6 @@ function resolveActivityVolume(
   if (line === "Laboratorio") {
     const channelOrders =
       numberFromValue(values.lab_medical_order_count) +
-      numberFromValue(values.lab_no_doctor_order_count) +
       numberFromValue(values.lab_analiza_order_count) +
       numberFromValue(values.lab_drsv_order_count) +
       numberFromValue(values.lab_home_visit_count);
@@ -758,7 +757,6 @@ function getAutomaticQualityAlerts({
     const labOrders = numberFromValue(values.lab_total_orders);
     const channelOrders =
       numberFromValue(values.lab_medical_order_count) +
-      numberFromValue(values.lab_no_doctor_order_count) +
       numberFromValue(values.lab_analiza_order_count) +
       numberFromValue(values.lab_drsv_order_count) +
       numberFromValue(values.lab_home_visit_count);
@@ -902,6 +900,9 @@ function ManualField({
   const isAreaManagerSelector = field.id === "area_manager_name";
   const isSelectField =
     isBranchSelector || isBranchManagerSelector || isAreaManagerSelector;
+  const isSystemDateField = ["data_cutoff_date", "load_deadline_date"].includes(
+    field.id,
+  );
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     onChange(event.target.value);
@@ -1034,6 +1035,7 @@ function ManualField({
               readOnly && "bg-muted text-muted-foreground",
             )}
             inputMode={isNumeric ? "decimal" : undefined}
+            disabled={readOnly && isSystemDateField}
             max={field.max}
             min={field.min}
             onChange={handleChange}
@@ -1116,7 +1118,7 @@ function YearToDateDashboard({
   const branchEntries = selectedBranchName
     ? lineEntries.filter((entry) => branchNamesMatch(entry.branch, selectedBranchName))
     : lineEntries;
-  const scopedEntries = branchEntries.length > 0 ? branchEntries : lineEntries;
+  const scopedEntries = selectedBranchName ? branchEntries : lineEntries;
   const totalRevenue = scopedEntries.reduce(
     (sum, entry) => sum + entry.netRevenue,
     0,
@@ -1149,7 +1151,7 @@ function YearToDateDashboard({
           </div>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             Acumulado 2026 por linea y sucursal seleccionada. Si la sucursal no
-            tiene historico DEMO, se muestra la linea completa como referencia.
+            tiene historico DEMO, no se mezclan datos de otras sucursales.
           </p>
         </div>
         <Badge variant="outline">
@@ -1185,36 +1187,52 @@ function YearToDateDashboard({
       </div>
 
       <div className="grid gap-2">
-        {scopedEntries
-          .slice()
-          .sort((left, right) => left.period.localeCompare(right.period))
-          .map((entry) => (
-            <div className="grid gap-1" key={entry.id}>
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <span className="font-medium">
-                  {entry.period} · {entry.branch}
-                </span>
-                <span className="text-muted-foreground">
-                  {formatCurrency(entry.netRevenue)} / meta{" "}
-                  {formatCurrency(entry.revenueTarget)}
-                </span>
+        {scopedEntries.length > 0 ? (
+          scopedEntries
+            .slice()
+            .sort((left, right) => left.period.localeCompare(right.period))
+            .map((entry) => (
+              <div className="grid gap-1" key={entry.id}>
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="font-medium">
+                    {entry.period} · {entry.branch}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {formatCurrency(entry.netRevenue)} / meta{" "}
+                    {formatCurrency(entry.revenueTarget)}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-muted">
+                  <div
+                    className="h-2 rounded-full bg-primary"
+                    style={{
+                      width: `${Math.max(6, (entry.netRevenue / maxRevenue) * 100)}%`,
+                    }}
+                  />
+                </div>
               </div>
-              <div className="h-2 rounded-full bg-muted">
-                <div
-                  className="h-2 rounded-full bg-primary"
-                  style={{
-                    width: `${Math.max(6, (entry.netRevenue / maxRevenue) * 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
+            ))
+        ) : (
+          <div className="rounded-md border border-dashed bg-muted/30 p-4 text-sm leading-6 text-muted-foreground">
+            Aun no hay cierres publicados para esta sucursal. Cuando se publique
+            su cierre mensual, el YTD se calculara solo con esa sucursal.
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
 function HistoryTable({ entries }: { entries: ManualMonthlyHistoryEntry[] }) {
+  if (entries.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed bg-muted/30 p-4 text-sm leading-6 text-muted-foreground">
+        Aun no hay cierres historicos para la sucursal seleccionada. No se
+        muestran registros de otras sucursales para evitar lecturas mezcladas.
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[1040px] text-left text-sm">
@@ -1264,6 +1282,7 @@ function HistoryTable({ entries }: { entries: ManualMonthlyHistoryEntry[] }) {
 export function ManualMonthlyEntryDashboard() {
   const activeBusinessLine = useActiveBusinessLine();
   const activeLine = toImportBusinessLine(activeBusinessLine.line);
+  const formTopRef = useRef<HTMLElement | null>(null);
   const [context, setContext] = useState<StoredContext | null>(null);
   const [activeRole, setActiveRole] = useState<RoleKey>("super_admin");
   const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -1402,9 +1421,19 @@ export function ManualMonthlyEntryDashboard() {
       ),
     [demoHistory, filteredLocalHistory],
   );
+  const selectedBranchName = selectedBranch?.name ?? "";
+  const scopedHistoryEntries = useMemo(() => {
+    if (!selectedBranchName || activeLine === "Consolidado") {
+      return historyEntries;
+    }
+
+    return historyEntries.filter((entry) =>
+      branchNamesMatch(entry.branch, selectedBranchName),
+    );
+  }, [activeLine, historyEntries, selectedBranchName]);
   const summary = useMemo(
-    () => calculateManualMonthlyHistorySummary(historyEntries),
-    [historyEntries],
+    () => calculateManualMonthlyHistorySummary(scopedHistoryEntries),
+    [scopedHistoryEntries],
   );
   const tone = businessLineTone[activeLine];
   const deadlineDate =
@@ -1563,12 +1592,28 @@ export function ManualMonthlyEntryDashboard() {
 
   function showPreviousStep() {
     setActiveStepIndex((currentValue) => Math.max(0, currentValue - 1));
+    scrollFormToTop();
   }
 
   function showNextStep() {
     setActiveStepIndex((currentValue) =>
       Math.min(formSteps.length - 1, currentValue + 1),
     );
+    scrollFormToTop();
+  }
+
+  function selectStep(index: number) {
+    setActiveStepIndex(index);
+    scrollFormToTop();
+  }
+
+  function scrollFormToTop() {
+    window.requestAnimationFrame(() => {
+      formTopRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   }
 
   return (
@@ -1634,7 +1679,10 @@ export function ManualMonthlyEntryDashboard() {
         </div>
       ) : (
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <article className={cn("rounded-md border bg-card", tone.border)}>
+          <article
+            className={cn("rounded-md border bg-card", tone.border)}
+            ref={formTopRef}
+          >
             <div className="grid gap-4 border-b p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="grid gap-1">
@@ -1676,7 +1724,7 @@ export function ManualMonthlyEntryDashboard() {
                         isActiveStep && "border-primary bg-primary/5",
                       )}
                       key={step.id}
-                      onClick={() => setActiveStepIndex(index)}
+                      onClick={() => selectStep(index)}
                       type="button"
                     >
                       <span
@@ -1721,7 +1769,11 @@ export function ManualMonthlyEntryDashboard() {
                     key={field.id}
                     onChange={(value) => updateField(field.id, value)}
                     readOnly={
-                      ["area_zone", "load_deadline_date"].includes(field.id) ||
+                      [
+                        "area_zone",
+                        "data_cutoff_date",
+                        "load_deadline_date",
+                      ].includes(field.id) ||
                       field.id.startsWith("team_feedback_") ||
                       (lockAssignedScope &&
                         [
@@ -1889,7 +1941,7 @@ export function ManualMonthlyEntryDashboard() {
 
       <YearToDateDashboard
         activeLine={activeLine}
-        entries={historyEntries}
+        entries={scopedHistoryEntries}
         selectedBranch={selectedBranch}
       />
 
@@ -1905,7 +1957,7 @@ export function ManualMonthlyEntryDashboard() {
           </div>
           <Badge className={tone.badge}>{historyLine}</Badge>
         </div>
-        <HistoryTable entries={historyEntries} />
+        <HistoryTable entries={scopedHistoryEntries} />
       </section>
     </section>
   );
